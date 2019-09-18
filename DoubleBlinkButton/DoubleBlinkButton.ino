@@ -59,12 +59,12 @@ void blink(int led, int ritardo, int durata) {
 }
 
 void reset() {
-          wait = 0;
+        wait = 0;
         Serial.println("Ho Resettato il contatore. Tra 5s si riparte!");
         //digitalWrite(LED_BUILTIN,HIGH);
-        blink(LED_BUILTIN, 250,restartdelay);
         digitalWrite(RED_LED, LOW);
         digitalWrite(YELLOW_LED, LOW); //SPENGO ENTRAMBI I LED PRINCIPALI 
         digitalWrite(LED_BUILTIN,LOW);
+        blink(LED_BUILTIN, 250,restartdelay);
         return;
 }
