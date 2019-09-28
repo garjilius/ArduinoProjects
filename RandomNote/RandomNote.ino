@@ -2,6 +2,7 @@
 #define pResistor A0
 #define NUMLED 4
 int led[NUMLED] = {8,9,10,11};
+float pResistorValue;
 
 void setup() {
   // put your setup code here, to run once:
@@ -16,13 +17,17 @@ void setup() {
 }
 
 void loop() {
-    float pResistorValue = analogRead(pResistor);
+    pResistorValue = analogRead(pResistor);
     //Serial.println(pResistorValue);
+
+    /*
   if(pResistorValue < 500) {
     play();
   } else {
     ledsOff();
   }
+  */
+  play();
 }
 
 void ledOn(int lednum) {
@@ -33,8 +38,9 @@ void ledOn(int lednum) {
 
 void play() {
   int nota = random(200,1000);
+  //int nota = random((1000 - pResistorValue) / 3,1000);
   tone(pinBuzzer,nota,100);
-  delay(random(100,250));
+  delay(random(pResistorValue/3,pResistorValue/1.5));
   ledOn(random(0,NUMLED));
 }
 
