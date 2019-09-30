@@ -21,7 +21,6 @@ void setup() {
   lcd.begin(16, 2);
   dht.begin();
   // Print a message to the LCD
-  //lcd.print("Hello Idiots");
   Serial.begin(9600);
 }
 
@@ -33,7 +32,9 @@ void loop() {
     Serial.println("Failed to read from DHT");
     lcd.setCursor(13,1);
     lcd.print("(!)");
+    delay(5000);
   } else  {
+    
     lcd.setCursor(0, 0);
     lcd.print("Humidity:");
     lcd.print(h);
@@ -41,7 +42,8 @@ void loop() {
     lcd.setCursor(0,1);
     lcd.print("Temp.: ");
     lcd.print(t);
-    lcd.println("C   ");
+    lcd.println("C   "); 
+
   }
 
   delay(2000);
