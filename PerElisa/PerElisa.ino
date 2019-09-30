@@ -297,7 +297,12 @@ void loop()
 
 void setup()    
 {
-  pinMode(speakerPin, OUTPUT);  
+  pinMode(speakerPin, OUTPUT);
+  
+  for(int i = 0; i <=NUMLED; i++) {
+    pinMode(led[i],OUTPUT);
+  }
+  
   Serial.begin(9600);
 }
 
