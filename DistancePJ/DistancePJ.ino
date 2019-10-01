@@ -32,13 +32,15 @@ void loop() {
   float distance = getSonar();
   /*
   Serial.print("Ping: ");
-  Serial.print(distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
+  Serial.print(distance);
   Serial.println("cm"); 
   */
+  lcd.setCursor(12,0); // Fanno in modo che se diminuisce la lunghezza della distanza non resti scritto 'cmm' o cose simili
+  lcd.print("    ");    //
   lcd.setCursor(0,0);
   lcd.print("Dist: ");
   lcd.print(distance);
-  lcd.print("cm"); 
+  lcd.print("cm");
   if(distance < 50) {
     lcd.setCursor(0,1);
     lcd.print("TOO CLOSE, MAN");
@@ -63,7 +65,8 @@ void alarm(int dist, int freq, int dur) {
   tone(pinBuzzer,freq,dur);
   buzzerDelay = dist*3;
   Serial.println(buzzerDelay);
-  delay(buzzerDelay);
+  if (dist>5)
+    delay(buzzerDelay);
 }
 
 void delRow(int row) {
