@@ -1,40 +1,42 @@
-#include <virtuabotixRTC.h>
+#include <Wire.h>
+#include <Adafruit_SSD1306.h>
+#include <Adafruit_GFX.h>
+//DISPLAY OLED DA COLLEGARE SEMPRE A SCL E SDA
+#define OLED_ADDR   0x3C
 
-virtuabotixRTC myRTC(7, 6, 5);
+Adafruit_SSD1306 display(128, 64, &Wire);
+
+//Variables
+int counter=0;
+int x,y;
+int clcd, slcd=0;
 
 void setup() {
-  Serial.begin(9600);
-  // Set the current date, and time in the following format:
-  // seconds, minutes, hours, day of the week, day of the month, month, year
-  myRTC.setDS1302Time(00, 55, 11, 1, 30, 9, 2019);
+  display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
+  display.clearDisplay();
+  display.display();
+
+  delay(1000);
 }
 
 void loop() {
-// This allows for the update of variables for time or accessing the individual elements.
-  myRTC.updateTime();
+  display.clearDisplay();
+  x=counter%128;
+  y=counter%64;
   
-// Start printing elements as individuals
-  Serial.print("Clock: ");
-  print2chars(myRTC.dayofmonth);
-  Serial.print("/");
-  print2chars(myRTC.month);
-  Serial.print("/");
-  print2chars(myRTC.year);
-  Serial.print("  ");
-  print2chars(myRTC.hours);
-  Serial.print(":");
-  print2chars(myRTC.minutes);
-  Serial.print(":");
-  print2chars(myRTC.seconds);    
-  Serial.println("");
-  
-// Delay so the program doesn't print non-stop
-  delay( 5000); // 
-}
+  display.drawPixel(x, y, WHITE);
+  display.drawPixel(127-x, y, WHITE);
+  display.drawPixel(x, 63-y, WHITE);
+  display.drawPixel(127-x, 63-y, WHITE);
 
-void print2chars(int n) {
-    if (n<10) {
-      Serial.print("0");
-    }
-    Serial.print(n);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(x,30);
+  display.print("Hello, world!");
+
+  display.display();
+
+  counter++;
+  delay(100);
+
 }

@@ -1,6 +1,7 @@
 #include <Wire.h>
 #include <hd44780.h>
-#include <hd44780ioClass/hd44780_I2Cexp.h> // include i/o class header
+#include <hd44780ioClass/hd44780_I2Cexp.h> // include i/o class header //
+//collegare il display a SCL e SDA su arduino uno wifi come indicato sull'interfaccia i2c
 
 hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44780 chip
 
