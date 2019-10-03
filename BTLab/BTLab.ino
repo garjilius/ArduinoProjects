@@ -5,6 +5,9 @@ byte ledcount = 5;
 #include <SoftwareSerial.h>
 
 SoftwareSerial mySerial(2, 3); // RX, TX
+//PER UNO WIFI. Collegare ai pin indicati in MySerial.
+
+
 
 void setup() {
   Serial.begin(9600);
