@@ -28,9 +28,6 @@ void loop() {
     } else {
       lcd.print(s);
     }
-
-    Serial.println(s.length());
-    Serial.println(s);
+    //Serial.println(s);
   }
-  delay(100);
 }
