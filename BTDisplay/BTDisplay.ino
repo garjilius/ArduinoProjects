@@ -19,7 +19,13 @@ void loop() {
   if (Serial.available()) {
     lcd.clear();
     String s = Serial.readString();
-    if (s.length() > 16) { //Va a capo se la stringa è più lunga della riga del display
+    lcdPrint(s);
+    //Serial.println(s);
+  }
+}
+
+void lcdPrint(String s) {
+  if (s.length() > 16) { //Va a capo se la stringa è più lunga della riga del display
       String s1 = s.substring(0, 16);
       String s2 = s.substring(16);
       lcd.print(s1);
@@ -28,6 +34,4 @@ void loop() {
     } else {
       lcd.print(s);
     }
-    //Serial.println(s);
-  }
 }
