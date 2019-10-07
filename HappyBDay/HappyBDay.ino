@@ -1,15 +1,10 @@
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(11, 10, 5, 4, 3, 2);
 
-
 int speakerPin = 7;
-
 int length = 28; // the number of notes
-
 char notes[] = "GGAGcB GGAGdc GGxecBA yyecdc";
-
 int beats[] = { 2, 2, 8, 8, 8, 16, 1, 2, 2, 8, 8, 8, 16, 1, 2, 2, 8, 8, 8, 8, 16, 1, 2, 2, 8, 8, 8, 16 };
-
 int tempo = 150;
 
 void playTone(int tone, int duration) {
@@ -49,13 +44,12 @@ void setup() {
   lcd.begin(16, 2);
   // Print a message to the LCD
   lcd.print("Buon compleanno");
-  lcd.setCursor(5,1);
-  lcd.print("Clelia");
+  lcd.setCursor(4,1);
+  lcd.print("!CLELIA!");
   Serial.begin(9600);
 }
 
 void loop() {
-
   for (int i = 0; i < length; i++) {
     if (notes[i] == ' ') {
       delay(beats[i] * tempo); // rest
