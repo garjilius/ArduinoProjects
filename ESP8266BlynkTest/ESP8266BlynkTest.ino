@@ -17,9 +17,9 @@
   This example code is in public domain.
 
  *************************************************************
-  =>
-  =>          USB HOWTO: http://tiny.cc/BlynkUSB
-  =>
+  WARNING!
+    It's very tricky to get it working. Please read this article:
+    http://help.blynk.cc/hardware-and-libraries/arduino/esp8266-with-at-firmware
 
   This example shows how value can be pushed from Arduino to
   the Blynk App.
@@ -35,20 +35,35 @@
  *************************************************************/
 
 /* Comment this out to disable prints and save space */
-#define BLYNK_PRINT SwSerial
+#define BLYNK_PRINT Serial
 
 
-#include <SoftwareSerial.h>
-SoftwareSerial SwSerial(10, 11); // RX, TX
-
-#include <BlynkSimpleStream.h>
+#include <ESP8266_Lib.h>
+#include <BlynkSimpleShieldEsp8266.h>
 #include <DHT.h>
 
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
-char auth[] = "bfXvVV6SWiC7_vdZzBvTzedOBr5hPz03";
+char auth[] = "U--PgDCcR8ogT9XIBhYPVMgjB7qddAli";
 
-#define DHTPIN 9          // What digital pin we're connected to
+// Your WiFi credentials.
+// Set password to "" for open networks.
+char ssid[] = "***REMOVED***";
+char pass[] = "***REMOVED***";
+
+// Hardware Serial on Mega, Leonardo, Micro...
+//#define EspSerial Serial1
+
+// or Software Serial on Uno, Nano...
+#include <SoftwareSerial.h>
+SoftwareSerial EspSerial(2, 3); // RX, TX
+
+// Your ESP8266 baud rate:
+#define ESP8266_BAUD 115200
+
+ESP8266 wifi(&EspSerial);
+
+#define DHTPIN 2          // What digital pin we're connected to
 
 // Uncomment whatever type you're using!
 #define DHTTYPE DHT11     // DHT 11
@@ -57,7 +72,6 @@ char auth[] = "bfXvVV6SWiC7_vdZzBvTzedOBr5hPz03";
 
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
-unsigned long timestamp = millis();;
 
 // This function sends Arduino's up time every second to Virtual Pin (5).
 // In the app, Widget's reading frequency should be set to PUSH. This means
@@ -67,16 +81,8 @@ void sendSensor()
   float h = dht.readHumidity();
   float t = dht.readTemperature(); // or dht.readTemperature(true) for Fahrenheit
 
-  if (h > 80) {
-      Blynk.notify("L'umidità è troppo alta");
-  }
-  
-  if (t>25) {
-    Blynk.notify("La temperatura è troppo alta");
-  }
-
   if (isnan(h) || isnan(t)) {
-    SwSerial.println("Failed to read from DHT sensor!");
+    Serial.println("Failed to read from DHT sensor!");
     return;
   }
   // You can send any value at any time.
@@ -88,18 +94,21 @@ void sendSensor()
 void setup()
 {
   // Debug console
-  SwSerial.begin(9600);
-
-  // Blynk will work through Serial
-  // Do not read or write this serial manually in your sketch
   Serial.begin(9600);
-  Blynk.begin(Serial, auth);
+
+  // Set ESP8266 baud rate
+  EspSerial.begin(ESP8266_BAUD);
+  delay(10);
+
+  Blynk.begin(auth, wifi, ssid, pass);
+  // You can also specify server:
+  //Blynk.begin(auth, wifi, ssid, pass, "blynk-cloud.com", 80);
+  //Blynk.begin(auth, wifi, ssid, pass, IPAddress(192,168,1,100), 8080);
 
   dht.begin();
 
   // Setup a function to be called every second
   timer.setInterval(1000L, sendSensor);
-  timestamp = 0;
 }
 
 void loop()
