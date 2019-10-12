@@ -1,41 +1,3 @@
-/*************************************************************
-  Download latest Blynk library here:
-    https://github.com/blynkkk/blynk-library/releases/latest
-
-  Blynk is a platform with iOS and Android apps to control
-  Arduino, Raspberry Pi and the likes over the Internet.
-  You can easily build graphic interfaces for all your
-  projects by simply dragging and dropping widgets.
-
-    Downloads, docs, tutorials: http://www.blynk.cc
-    Sketch generator:           http://examples.blynk.cc
-    Blynk community:            http://community.blynk.cc
-    Follow us:                  http://www.fb.com/blynkapp
-                                http://twitter.com/blynk_app
-
-  Blynk library is licensed under MIT license
-  This example code is in public domain.
-
- *************************************************************
-  =>
-  =>          USB HOWTO: http://tiny.cc/BlynkUSB
-  =>
-
-  This example shows how value can be pushed from Arduino to
-  the Blynk App.
-
-  WARNING :
-  For this example you'll need Adafruit DHT sensor libraries:
-    https://github.com/adafruit/Adafruit_Sensor
-    https://github.com/adafruit/DHT-sensor-library
-
-  App project setup:
-    Value Display widget attached to V5
-    Value Display widget attached to V6
- *************************************************************/
-
-/* Comment this out to disable prints and save space */
-
 
 #include <SoftwareSerial.h>
 #include <BlynkSimpleStream.h>
@@ -43,11 +5,16 @@
 
 #define DHTPIN 2
 #define BLYNK_PRINT SwSerial
+#define EVHUM 0
+#define EVTEMP 1
+#define HUMLIMIT 75
+#define TEMPLIMIT 25
 
 char auth[] = "KjRZz0ewLqAP38p2kX6_TqnLXuWoYumK";
 unsigned long lastNotification;
 unsigned long currentMillis;
 const unsigned long delayNotificationMillis = 60000;
+bool notificationAllowed[5] = {true,true,true,true,true}; //uso g
 
 SoftwareSerial SwSerial(10, 11); // RX, TX
 WidgetTerminal terminal(V1);
@@ -61,9 +28,6 @@ WidgetTerminal terminal(V1);
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
 
-// This function sends Arduino's up time every second to Virtual Pin (5).
-// In the app, Widget's reading frequency should be set to PUSH. This means
-// that you define how often to send data to Blynk App.
 void sendSensor()
 {
   float h = dht.readHumidity();
@@ -78,16 +42,21 @@ void sendSensor()
   Blynk.virtualWrite(V5, h);
   Blynk.virtualWrite(V6, t);
 
-  if (h > 75) {
-    if (notificationAllowed()) {
+  if (h > HUMLIMIT) {
+    if (notificationAllowed[EVHUM] == true) {
+      notificationAllowed[EVHUM] = false;
       String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
-      notifica += dht.readHumidity();
+      notifica += h;
       notifica += "%";
       //Blynk.email("Umidità", notifica); //Esempio di email
       Blynk.notify(notifica);
       terminal.println("Notification supposedly sent");
     }
+  } 
+  else {
+    notificationAllowed[EVHUM] = true;
   }
+   
 }
 
 void setup()
@@ -114,6 +83,7 @@ void loop()
   timer.run();
 }
 
+/*
 bool notificationAllowed() {
   currentMillis = millis();
 if (lastNotification - currentMillis > delayNotificationMillis ) {
@@ -132,3 +102,4 @@ if (lastNotification - currentMillis > delayNotificationMillis ) {
     return false;
   }
 }
+*/
