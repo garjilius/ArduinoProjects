@@ -30,6 +30,7 @@ BlynkTimer timer;
 
 void sendSensor()
 {
+  terminal.flush();
   float h = dht.readHumidity();
   float t = dht.readTemperature(); // or dht.readTemperature(true) for Fahrenheit
 
@@ -42,20 +43,44 @@ void sendSensor()
   Blynk.virtualWrite(V5, h);
   Blynk.virtualWrite(V6, t);
 
+//GESTISCO LE NOTIFICHE DEI SENSORI
   if (h > HUMLIMIT) {
     if (notificationAllowed[EVHUM] == true) {
       notificationAllowed[EVHUM] = false;
       String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
       notifica += h;
       notifica += "%";
+      
+      terminal.println("Notification supposedly sent");
+      terminal.println("Notifications disabled");
+      delay(100);
+      
       //Blynk.email("Umidità", notifica); //Esempio di email
+      //Blynk.notify(notifica);
+    }
+  } 
+  else {
+    terminal.println("Notifications enabled");
+    delay(100);
+    
+    notificationAllowed[EVHUM] = true;
+  }
+  
+  if (t > TEMPLIMIT) {
+    if (notificationAllowed[EVTEMP] == true) {
+      notificationAllowed[EVTEMP] = false;
+      String notifica = "La temperatura ha raggiunto valori troppo elevati: ";
+      notifica += t;
+      notifica += " C";
+      Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
       terminal.println("Notification supposedly sent");
     }
   } 
   else {
-    notificationAllowed[EVHUM] = true;
+    notificationAllowed[EVTEMP] = true;
   }
+  
    
 }
 
@@ -63,7 +88,6 @@ void setup()
 {
   // Debug console
   SwSerial.begin(9600);
-  terminal.clear();
   lastNotification = millis();
 
   // Blynk will work through Serial
