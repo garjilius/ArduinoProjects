@@ -83,12 +83,10 @@ void sendSensor()
       Blynk.notify(notifica);
       digitalWrite(13, HIGH);
     }
-    else {
-      timer.setInterval(60000L, enableMovementNotification);
-    }
   }
   else {
     digitalWrite(13, LOW);
+    timer.setInterval(60000L, enableMovementNotification);
   }
 }
 
@@ -128,7 +126,7 @@ void debugNotifications() {
   for (int i = 0; i < 3; i++) {
     if (notificationAllowed[i]) {
       terminal.print(i);
-      terminal.print(":allowed at ms");
+      terminal.print(":allowed at ms ");
     }
     else {
       terminal.print(i);
