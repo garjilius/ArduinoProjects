@@ -35,12 +35,11 @@
  *************************************************************/
 
 /* Comment this out to disable prints and save space */
-#define BLYNK_PRINT SwSerial
 
 
 #include <SoftwareSerial.h>
 SoftwareSerial SwSerial(10, 11); // RX, TX
-    
+
 #include <BlynkSimpleStream.h>
 #include <DHT.h>
 
@@ -49,6 +48,9 @@ SoftwareSerial SwSerial(10, 11); // RX, TX
 char auth[] = "KjRZz0ewLqAP38p2kX6_TqnLXuWoYumK";
 
 #define DHTPIN 2          // What digital pin we're connected to
+#define BLYNK_PRINT SwSerial
+#define notificationDelay 60 * 1000 //Secondi per millisecondi, modificare solo il primo valore per delay in secondi
+unsigned long lastNotification;
 
 // Uncomment whatever type you're using!
 #define DHTTYPE DHT11     // DHT 11
@@ -74,11 +76,18 @@ void sendSensor()
   // Please don't send more that 10 values per second.
   Blynk.virtualWrite(V5, h);
   Blynk.virtualWrite(V6, t);
+
+  if (h > 75) {
+    if (notificationAllowed(notificationDelay)) {
+    Blynk.email("Umidità", "L'umidità ha raggiunto valori troppo elevati"); //Esempio di email
+    }
+  }
 }
 
 void setup()
 {
   // Debug console
+  lastNotification = 0;
   SwSerial.begin(9600);
 
   // Blynk will work through Serial
@@ -96,4 +105,11 @@ void loop()
 {
   Blynk.run();
   timer.run();
+}
+
+bool notificationAllowed(int delayInSeconds) {
+  if ((millis() - lastNotification) > delayInSeconds) {
+    lastNotification = millis();
+    return true;
+  }
 }
