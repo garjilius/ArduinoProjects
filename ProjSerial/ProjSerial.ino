@@ -16,7 +16,7 @@ char auth[] = "KjRZz0ewLqAP38p2kX6_TqnLXuWoYumK";
 unsigned long lastNotification;
 unsigned long currentMillis;
 const unsigned long delayNotificationMillis = 60000;
-bool notificationAllowed[5] = {true,true,true,true,true}; 
+bool notificationAllowed[5] = {true, true, true, true, true};
 
 SoftwareSerial SwSerial(10, 11); // RX, TX
 WidgetTerminal terminal(V1);
@@ -45,7 +45,7 @@ void sendSensor()
   Blynk.virtualWrite(V5, h);
   Blynk.virtualWrite(V6, t);
 
-//GESTISCO LE NOTIFICHE DEI SENSORI
+  //GESTISCO LE NOTIFICHE DEI SENSORI
   if (h > HUMLIMIT) {
     if (notificationAllowed[EVHUM] == true) {
       notificationAllowed[EVHUM] = false;
@@ -55,11 +55,11 @@ void sendSensor()
       //Blynk.email("Umidità", notifica); //Esempio di email
       Blynk.notify(notifica);
     }
-  } 
+  }
   else {
     notificationAllowed[EVHUM] = true;
   }
-  
+
   if (t > TEMPLIMIT) {
     if (notificationAllowed[EVTEMP] == true) {
       notificationAllowed[EVTEMP] = false;
@@ -69,24 +69,26 @@ void sendSensor()
       //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
     }
-  } 
+  }
   else {
     notificationAllowed[EVTEMP] = true;
   }
-  
-  if (digitalRead(IRPIN)==HIGH) {
+
+  if (digitalRead(IRPIN) == HIGH) {
     terminal.println("Movimento Rilevato");
     if (notificationAllowed[EVMOV] == true) {
       notificationAllowed[EVMOV] = false;
       String notifica = "Rilevato un movimento!";
       //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
-      digitalWrite(13,HIGH);
+      digitalWrite(13, HIGH);
     }
-  } 
+    else {
+      timer.setInterval(60000L, enableMovementNotification);
+    }
+  }
   else {
-    timer.setInterval(60000L, enableMovementNotification);
-    digitalWrite(13,LOW);
+    digitalWrite(13, LOW);
   }
 }
 
@@ -100,8 +102,8 @@ void setup()
   // Do not read or write this serial manually in your sketch
   Serial.begin(9600);
   Blynk.begin(Serial, auth);
-  pinMode(13,OUTPUT);
-  
+  pinMode(13, OUTPUT);
+
   dht.begin();
 
   // Setup a function to be called every second
@@ -122,14 +124,17 @@ void enableMovementNotification() {
 }
 
 void debugNotifications() {
-  for(int i = 0; i<3;i++) {
-    if(notificationAllowed[i]) {
+  terminal.println("");
+  for (int i = 0; i < 3; i++) {
+    if (notificationAllowed[i]) {
       terminal.print(i);
-      terminal.println(":allowed");
-    } 
+      terminal.print(":allowed at ms");
+    }
     else {
       terminal.print(i);
-      terminal.println(":NOT ALLOWED");
+      terminal.print(":NOT ALLOWED at ms ");
     }
+    terminal.println(millis());
+    terminal.flush();
   }
 }
