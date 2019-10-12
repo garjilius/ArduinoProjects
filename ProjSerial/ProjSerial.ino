@@ -57,9 +57,6 @@ void sendSensor()
     }
   } 
   else {
-    terminal.println("Notifications enabled");
-    delay(100);
-    
     notificationAllowed[EVHUM] = true;
   }
   
@@ -88,8 +85,7 @@ void sendSensor()
     }
   } 
   else {
-   // notificationAllowed[EVMOV] = true;
-     timer.setInterval(60000L, enableMovementNotification);
+    timer.setInterval(60000L, enableMovementNotification);
     digitalWrite(13,LOW);
   }
 }
@@ -110,6 +106,8 @@ void setup()
 
   // Setup a function to be called every second
   timer.setInterval(1000L, sendSensor);
+  //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
+  timer.setInterval(1000L, debugNotifications);
 }
 
 void loop()
@@ -121,4 +119,17 @@ void loop()
 //Per il movimento è necessario usare timer per resettare le notifiche
 void enableMovementNotification() {
   notificationAllowed[EVMOV] = true;
+}
+
+void debugNotifications() {
+  for(int i = 0; i<3;i++) {
+    if(notificationAllowed[i]) {
+      terminal.print(i);
+      terminal.println(":allowed");
+    } 
+    else {
+      terminal.print(i);
+      terminal.println(":NOT ALLOWED");
+    }
+  }
 }
