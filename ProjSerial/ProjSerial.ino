@@ -11,12 +11,15 @@
 #define HUMLIMIT 75
 #define TEMPLIMIT 25
 #define IRPIN 12
+#define MOVLED 13
+#define SYSLED 11
 
 char auth[] = "KjRZz0ewLqAP38p2kX6_TqnLXuWoYumK";
 unsigned long lastNotification;
 unsigned long currentMillis;
 const unsigned long delayNotificationMillis = 60000;
 bool notificationAllowed[5] = {true, true, true, true, true};
+bool systemDisabled = false;
 
 SoftwareSerial SwSerial(10, 11); // RX, TX
 WidgetTerminal terminal(V1);
@@ -32,7 +35,16 @@ BlynkTimer timer;
 
 void sendSensor()
 {
+  if (systemDisabled == 1) {
+    digitalWrite(SYSLED, LOW);
+    digitalWrite(MOVLED,LOW);
+    return; //Se il sistema è disabilitato, non fa nulla
+  }
+
   terminal.flush(); //mi assicuro che il terminale non arrivi spezzettato
+  digitalWrite(SYSLED, HIGH);
+
+
   float h = dht.readHumidity();
   float t = dht.readTemperature(); // or dht.readTemperature(true) for Fahrenheit
 
@@ -75,17 +87,17 @@ void sendSensor()
   }
 
   if (digitalRead(IRPIN) == HIGH) {
+    digitalWrite(MOVLED, HIGH);
     terminal.println("Movimento Rilevato");
     if (notificationAllowed[EVMOV] == true) {
       notificationAllowed[EVMOV] = false;
       String notifica = "Rilevato un movimento!";
       //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
-      digitalWrite(13, HIGH);
     }
   }
   else {
-    digitalWrite(13, LOW);
+    digitalWrite(MOVLED, LOW);
     timer.setInterval(60000L, enableMovementNotification);
   }
 }
@@ -107,13 +119,15 @@ void setup()
   // Setup a function to be called every second
   timer.setInterval(1000L, sendSensor);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
-  timer.setInterval(1000L, debugNotifications);
+  timer.setInterval(1000L, debugSystem);
+
 }
 
 void loop()
 {
   Blynk.run();
   timer.run();
+
 }
 
 //Per il movimento è necessario usare timer per resettare le notifiche
@@ -121,7 +135,7 @@ void enableMovementNotification() {
   notificationAllowed[EVMOV] = true;
 }
 
-void debugNotifications() {
+void debugSystem() {
   terminal.println("");
   for (int i = 0; i < 3; i++) {
     if (notificationAllowed[i]) {
@@ -135,4 +149,14 @@ void debugNotifications() {
     terminal.println(millis());
     terminal.flush();
   }
+  if (systemDisabled == 1) {
+    terminal.println("System Disabled");
+  }
+  else {
+    terminal.println("Sistem Enabled");
+  }
+}
+
+BLYNK_WRITE(V0)  {
+  systemDisabled = param.asInt();
 }
