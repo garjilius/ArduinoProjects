@@ -38,19 +38,20 @@
 
 
 #include <SoftwareSerial.h>
-SoftwareSerial SwSerial(10, 11); // RX, TX
-
 #include <BlynkSimpleStream.h>
 #include <DHT.h>
 
-// You should get Auth Token in the Blynk App.
-// Go to the Project Settings (nut icon).
-char auth[] = "KjRZz0ewLqAP38p2kX6_TqnLXuWoYumK";
-
-#define DHTPIN 2          // What digital pin we're connected to
+#define DHTPIN 2
 #define BLYNK_PRINT SwSerial
-#define notificationDelay 60 * 1000 //Secondi per millisecondi, modificare solo il primo valore per delay in secondi
+
+char auth[] = "KjRZz0ewLqAP38p2kX6_TqnLXuWoYumK";
 unsigned long lastNotification;
+unsigned long currentMillis;
+const unsigned long delayNotificationMillis = 60000;
+
+SoftwareSerial SwSerial(10, 11); // RX, TX
+WidgetTerminal terminal(V1);
+
 
 // Uncomment whatever type you're using!
 #define DHTTYPE DHT11     // DHT 11
@@ -78,8 +79,13 @@ void sendSensor()
   Blynk.virtualWrite(V6, t);
 
   if (h > 75) {
-    if (notificationAllowed(notificationDelay)) {
-    Blynk.email("Umidità", "L'umidità ha raggiunto valori troppo elevati"); //Esempio di email
+    if (notificationAllowed()) {
+      String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
+      notifica += dht.readHumidity();
+      notifica += "%";
+      //Blynk.email("Umidità", notifica); //Esempio di email
+      Blynk.notify(notifica);
+      terminal.println("Notification supposedly sent");
     }
   }
 }
@@ -87,8 +93,9 @@ void sendSensor()
 void setup()
 {
   // Debug console
-  lastNotification = 0;
   SwSerial.begin(9600);
+  terminal.clear();
+  lastNotification = millis();
 
   // Blynk will work through Serial
   // Do not read or write this serial manually in your sketch
@@ -107,9 +114,21 @@ void loop()
   timer.run();
 }
 
-bool notificationAllowed(int delayInSeconds) {
-  if ((millis() - lastNotification) > delayInSeconds) {
-    lastNotification = millis();
+bool notificationAllowed() {
+  currentMillis = millis();
+if (lastNotification - currentMillis > delayNotificationMillis ) {
+    
+    terminal.print("Allowed - ");
+    terminal.print("Difference: ");
+    terminal.println((currentMillis-lastNotification)/1000);
+    
+    lastNotification = currentMillis;
     return true;
+  }
+  else {
+    terminal.print("NOT Allowed - ");
+    terminal.print("Difference: ");
+    terminal.println((currentMillis-lastNotification)/1000);  
+    return false;
   }
 }
