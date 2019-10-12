@@ -35,15 +35,7 @@ BlynkTimer timer;
 
 void sendSensor()
 {
-  if (systemDisabled == 1) {
-    digitalWrite(SYSLED, LOW);
-    digitalWrite(MOVLED,LOW);
-    return; //Se il sistema è disabilitato, non fa nulla
-  }
-
   terminal.flush(); //mi assicuro che il terminale non arrivi spezzettato
-  digitalWrite(SYSLED, HIGH);
-
 
   float h = dht.readHumidity();
   float t = dht.readTemperature(); // or dht.readTemperature(true) for Fahrenheit
@@ -56,6 +48,14 @@ void sendSensor()
   // Please don't send more that 10 values per second.
   Blynk.virtualWrite(V5, h);
   Blynk.virtualWrite(V6, t);
+
+  //IL SISTEMA VIENE DISABILITATO MA DOPO AVERE COMUNQUE PRESO TEMP E HUM
+  if (systemDisabled == 1) {
+    digitalWrite(SYSLED, LOW);
+    digitalWrite(MOVLED, LOW);
+    return; //Se il sistema è disabilitato, non fa nulla
+  }
+  digitalWrite(SYSLED, HIGH);
 
   //GESTISCO LE NOTIFICHE DEI SENSORI
   if (h > HUMLIMIT) {
