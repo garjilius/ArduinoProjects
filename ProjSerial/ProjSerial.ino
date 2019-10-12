@@ -7,14 +7,16 @@
 #define BLYNK_PRINT SwSerial
 #define EVHUM 0
 #define EVTEMP 1
+#define EVMOV 2
 #define HUMLIMIT 75
 #define TEMPLIMIT 25
+#define IRPIN 12
 
 char auth[] = "KjRZz0ewLqAP38p2kX6_TqnLXuWoYumK";
 unsigned long lastNotification;
 unsigned long currentMillis;
 const unsigned long delayNotificationMillis = 60000;
-bool notificationAllowed[5] = {true,true,true,true,true}; //uso g
+bool notificationAllowed[5] = {true,true,true,true,true}; 
 
 SoftwareSerial SwSerial(10, 11); // RX, TX
 WidgetTerminal terminal(V1);
@@ -30,7 +32,7 @@ BlynkTimer timer;
 
 void sendSensor()
 {
-  terminal.flush();
+  terminal.flush(); //mi assicuro che il terminale non arrivi spezzettato
   float h = dht.readHumidity();
   float t = dht.readTemperature(); // or dht.readTemperature(true) for Fahrenheit
 
@@ -50,13 +52,8 @@ void sendSensor()
       String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
       notifica += h;
       notifica += "%";
-      
-      terminal.println("Notification supposedly sent");
-      terminal.println("Notifications disabled");
-      delay(100);
-      
       //Blynk.email("Umidità", notifica); //Esempio di email
-      //Blynk.notify(notifica);
+      Blynk.notify(notifica);
     }
   } 
   else {
@@ -72,16 +69,29 @@ void sendSensor()
       String notifica = "La temperatura ha raggiunto valori troppo elevati: ";
       notifica += t;
       notifica += " C";
-      Blynk.email("Temperatura", notifica); //Esempio di email
+      //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
-      terminal.println("Notification supposedly sent");
     }
   } 
   else {
     notificationAllowed[EVTEMP] = true;
   }
   
-   
+  if (digitalRead(IRPIN)==HIGH) {
+    terminal.println("Movimento Rilevato");
+    if (notificationAllowed[EVMOV] == true) {
+      notificationAllowed[EVMOV] = false;
+      String notifica = "Rilevato un movimento!";
+      //Blynk.email("Temperatura", notifica); //Esempio di email
+      Blynk.notify(notifica);
+      digitalWrite(13,HIGH);
+    }
+  } 
+  else {
+   // notificationAllowed[EVMOV] = true;
+     timer.setInterval(60000L, enableMovementNotification);
+    digitalWrite(13,LOW);
+  }
 }
 
 void setup()
@@ -94,7 +104,8 @@ void setup()
   // Do not read or write this serial manually in your sketch
   Serial.begin(9600);
   Blynk.begin(Serial, auth);
-
+  pinMode(13,OUTPUT);
+  
   dht.begin();
 
   // Setup a function to be called every second
@@ -107,23 +118,7 @@ void loop()
   timer.run();
 }
 
-/*
-bool notificationAllowed() {
-  currentMillis = millis();
-if (lastNotification - currentMillis > delayNotificationMillis ) {
-    
-    terminal.print("Allowed - ");
-    terminal.print("Difference: ");
-    terminal.println((currentMillis-lastNotification)/1000);
-    
-    lastNotification = currentMillis;
-    return true;
-  }
-  else {
-    terminal.print("NOT Allowed - ");
-    terminal.print("Difference: ");
-    terminal.println((currentMillis-lastNotification)/1000);  
-    return false;
-  }
+//Per il movimento è necessario usare timer per resettare le notifiche
+void enableMovementNotification() {
+  notificationAllowed[EVMOV] = true;
 }
-*/

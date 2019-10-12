@@ -1,4 +1,4 @@
-int sensorPin = 8; // the number of the infrared motion sensor pin
+int sensorPin = 12; // the number of the infrared motion sensor pin
 int ledPin = 13;    // the number of the LED pin
 
 void setup() {
