@@ -1,16 +1,11 @@
-/*
 
- This example connects to an unencrypted Wifi network.
- Then it prints the  MAC address of the Wifi module,
- the IP address obtained, and other network details.
-
- created 13 July 2010
- by dlf (Metodo2 srl)
- modified 31 May 2012
- by Tom Igoe
- */
+#include <Wire.h>
 #include <SPI.h>
 #include <WiFiNINA.h>
+#include <hd44780.h>
+#include <hd44780ioClass/hd44780_I2Cexp.h>
+hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44780 chip
+
 
 #include "arduino_secrets.h" 
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
@@ -21,6 +16,11 @@ char pass[] = SECRET_PASS;       // your network password (use for WPA, or use a
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
 void setup() {
+  lcd.begin(20, 4);
+
+  // Print a message to the LCD
+  lcd.print("Inizializing...");
+  
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
   while (!Serial) {
@@ -56,13 +56,16 @@ void setup() {
   Serial.print("You're connected to the network");
   printCurrentNet();
   printWifiData();
+  
+
 
 }
 
 void loop() {
   // check the network connection once every 10 seconds:
-  delay(10000);
+  delay(5000);
   printCurrentNet();
+  displayPrintWifi();
 }
 
 void printWifiData() {
@@ -113,4 +116,16 @@ void printMacAddress(byte mac[]) {
     }
   }
   Serial.println();
+}
+
+void displayPrintWifi() {
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("CONNECTED");
+  lcd.setCursor(0,1);
+  lcd.print(WiFi.localIP());
+  lcd.setCursor(0,2);
+  lcd.print(WiFi.SSID());
+  lcd.setCursor(0,3);
+  lcd.print(WiFi.RSSI());
 }
