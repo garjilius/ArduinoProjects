@@ -33,6 +33,11 @@ WidgetTerminal terminal(V1);
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
 
+BLYNK_CONNECTED() {
+  // Request Blynk server to re-send latest values for all pins
+  Blynk.syncAll();
+}
+
 void sendSensor()
 {
   terminal.flush(); //mi assicuro che il terminale non arrivi spezzettato
