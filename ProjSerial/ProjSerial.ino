@@ -188,5 +188,4 @@ BLYNK_WRITE(V2)  {
   humLimit = param.asFloat();
   terminal.print("Hum Limit: ");
   terminal.println(humLimit);
-  terminal.print("FUNCT CALLED");
 }

@@ -145,6 +145,10 @@ void enableMovementNotification() {
 
 void debugSystem() {
   terminal.println("");
+  terminal.print("HumLimit:" );
+  terminal.println(humLimit);
+  terminal.print("TempLimit: ");
+  terminal.println(tempLimit);
   for (int i = 0; i < 3; i++) {
     if (notificationAllowed[i]) {
       terminal.print(i);
