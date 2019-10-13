@@ -127,7 +127,9 @@ void setup()
   // Setup a function to be called every second
   timer.setInterval(1000L, sendSensor);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
-  timer.setInterval(1000L, debugSystem);
+  timer.setInterval(5000L, debugSystem);
+  timer.setInterval(1000L, syncWidgets);
+
 
 }
 
