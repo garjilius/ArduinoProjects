@@ -15,8 +15,8 @@
 #define EVTEMP 1
 #define EVMOV 2
 
-int humLimit = 75;
-int tempLimit = 25;
+float humLimit = 75;
+float tempLimit = 25;
 
 //Forse mi servirà un nuovo token
 char auth[] = "KjRZz0ewLqAP38p2kX6_TqnLXuWoYumK";
@@ -118,6 +118,8 @@ void setup()
   Blynk.begin(auth, ssid, pass);
 
   lastNotification = millis();
+  syncWidgets();
+
   pinMode(MOVLED, OUTPUT);
   pinMode(SYSLED, OUTPUT);
   dht.begin();
@@ -164,11 +166,23 @@ void debugSystem() {
 }
 
 void syncWidgets() {
-Blynk.virtualWrite(V3, tempLimit);
-Blynk.virtualWrite(V2, humLimit);
-Blynk.virtualWrite(V0, systemDisabled);
+  Blynk.virtualWrite(V3, tempLimit);
+  Blynk.virtualWrite(V2, humLimit);
+  Blynk.virtualWrite(V0, systemDisabled);
 }
 
 BLYNK_WRITE(V0)  {
   systemDisabled = param.asInt();
+}
+
+BLYNK_WRITE(V3)  {
+  tempLimit = param.asFloat();
+  terminal.print("Temp Limit: ");
+  terminal.println(tempLimit);
+}
+
+BLYNK_WRITE(V2)  {
+  humLimit = param.asFloat();
+  terminal.print("Hum Limit: ");
+  terminal.println(humLimit);
 }

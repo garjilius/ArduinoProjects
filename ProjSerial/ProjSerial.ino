@@ -18,8 +18,8 @@ unsigned long currentMillis;
 const unsigned long delayNotificationMillis = 60000;
 bool notificationAllowed[5] = {true, true, true, true, true};
 bool systemDisabled = false;
-int humLimit = 75;
-int tempLimit = 25;
+float humLimit = 75;
+float tempLimit = 25;
 
 SoftwareSerial SwSerial(10, 11); // RX, TX
 WidgetTerminal terminal(V1);
@@ -144,6 +144,10 @@ void enableMovementNotification() {
 
 void debugSystem() {
   terminal.println("");
+  terminal.print("HumLimit:" );
+  terminal.println(humLimit);
+  terminal.print("TempLimit: ");
+  terminal.println(tempLimit);
   for (int i = 0; i < 3; i++) {
     if (notificationAllowed[i]) {
       terminal.print(i);
@@ -175,13 +179,14 @@ BLYNK_WRITE(V0)  {
 }
 
 BLYNK_WRITE(V3)  {
-  tempLimit = param.asInt();
+  tempLimit = param.asFloat();
   terminal.print("Temp Limit: ");
   terminal.println(tempLimit);
 }
 
 BLYNK_WRITE(V2)  {
-  humLimit = param.asInt();
+  humLimit = param.asFloat();
   terminal.print("Hum Limit: ");
   terminal.println(humLimit);
+  terminal.print("FUNCT CALLED");
 }
