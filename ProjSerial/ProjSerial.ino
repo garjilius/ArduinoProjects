@@ -8,8 +8,6 @@
 #define EVHUM 0
 #define EVTEMP 1
 #define EVMOV 2
-#define HUMLIMIT 75
-#define TEMPLIMIT 25
 #define IRPIN 12
 #define MOVLED 13
 #define SYSLED 11
@@ -20,6 +18,8 @@ unsigned long currentMillis;
 const unsigned long delayNotificationMillis = 60000;
 bool notificationAllowed[5] = {true, true, true, true, true};
 bool systemDisabled = false;
+int humLimit = 75;
+int tempLimit = 25;
 
 SoftwareSerial SwSerial(10, 11); // RX, TX
 WidgetTerminal terminal(V1);
@@ -63,7 +63,7 @@ void sendSensor()
   digitalWrite(SYSLED, HIGH);
 
   //GESTISCO LE NOTIFICHE DEI SENSORI
-  if (h > HUMLIMIT) {
+  if (h > humLimit) {
     if (notificationAllowed[EVHUM] == true) {
       notificationAllowed[EVHUM] = false;
       String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
@@ -77,7 +77,7 @@ void sendSensor()
     notificationAllowed[EVHUM] = true;
   }
 
-  if (t > TEMPLIMIT) {
+  if (t > tempLimit) {
     if (notificationAllowed[EVTEMP] == true) {
       notificationAllowed[EVTEMP] = false;
       String notifica = "La temperatura ha raggiunto valori troppo elevati: ";
@@ -112,6 +112,7 @@ void setup()
   // Debug console
   SwSerial.begin(9600);
   lastNotification = millis();
+  syncWidgets();
 
   // Blynk will work through Serial
   // Do not read or write this serial manually in your sketch
@@ -125,6 +126,7 @@ void setup()
   timer.setInterval(1000L, sendSensor);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
   timer.setInterval(1000L, debugSystem);
+  timer.setInterval(1000L, syncWidgets);
 
 }
 
@@ -162,6 +164,24 @@ void debugSystem() {
   }
 }
 
+void syncWidgets() {
+Blynk.virtualWrite(V3, tempLimit);
+Blynk.virtualWrite(V2, humLimit);
+Blynk.virtualWrite(V0, systemDisabled);
+}
+
 BLYNK_WRITE(V0)  {
   systemDisabled = param.asInt();
+}
+
+BLYNK_WRITE(V3)  {
+  tempLimit = param.asInt();
+  terminal.print("Temp Limit: ");
+  terminal.println(tempLimit);
+}
+
+BLYNK_WRITE(V2)  {
+  humLimit = param.asInt();
+  terminal.print("Hum Limit: ");
+  terminal.println(humLimit);
 }

@@ -15,8 +15,8 @@
 #define EVTEMP 1
 #define EVMOV 2
 
-#define HUMLIMIT 75
-#define TEMPLIMIT 25
+int humLimit = 75;
+int tempLimit = 25;
 
 //Forse mi servirà un nuovo token
 char auth[] = "KjRZz0ewLqAP38p2kX6_TqnLXuWoYumK";
@@ -68,7 +68,7 @@ void sendSensor()
   digitalWrite(SYSLED, HIGH);
 
   //GESTISCO LE NOTIFICHE DEI SENSORI
-  if (h > HUMLIMIT) {
+  if (h > humLimit) {
     if (notificationAllowed[EVHUM] == true) {
       notificationAllowed[EVHUM] = false;
       String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
@@ -82,7 +82,7 @@ void sendSensor()
     notificationAllowed[EVHUM] = true;
   }
 
-  if (t > TEMPLIMIT) {
+  if (t > tempLimit) {
     if (notificationAllowed[EVTEMP] == true) {
       notificationAllowed[EVTEMP] = false;
       String notifica = "La temperatura ha raggiunto valori troppo elevati: ";
@@ -161,6 +161,12 @@ void debugSystem() {
   else {
     terminal.println("Sistem Enabled");
   }
+}
+
+void syncWidgets() {
+Blynk.virtualWrite(V3, tempLimit);
+Blynk.virtualWrite(V2, humLimit);
+Blynk.virtualWrite(V0, systemDisabled);
 }
 
 BLYNK_WRITE(V0)  {
