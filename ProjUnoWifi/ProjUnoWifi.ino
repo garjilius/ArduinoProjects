@@ -39,6 +39,11 @@ BlynkTimer timer;
 char ssid[] = "***REMOVED***";
 char pass[] = "***REMOVED***";
 
+BLYNK_CONNECTED() {
+  // Request Blynk server to re-send latest values for all pins
+  Blynk.syncAll();
+}
+
 void sendSensor()
 {
   terminal.flush(); //mi assicuro che il terminale non arrivi spezzettato
