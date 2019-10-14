@@ -3,11 +3,16 @@
 #include <WiFiNINA.h>
 #include <BlynkSimpleWiFiNINA.h>
 #include <virtuabotixRTC.h>
+#include <Wire.h>
+#include <hd44780.h>
+#include <hd44780ioClass/hd44780_I2Cexp.h> // include i/o class header //
 
 #define DHTPIN 2
 #define IRPIN 12
 #define MOVLED 13
 #define SYSLED 11
+hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44780 chip
+
 
 #define BLYNK_PRINT Serial
 
@@ -111,7 +116,7 @@ void sendSensor()
       notifica += printTime();
       //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
-      
+
     }
   }
   else {
@@ -124,9 +129,11 @@ void setup()
 {
   Serial.begin(9600);
   Blynk.begin(auth, ssid, pass);
-    // Set the current date, and time in the following format:
+  lcd.begin(20, 4);
+  lcd.print("Initializing...");
+  // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
-  
+
   myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
   lastNotification = millis();
@@ -143,6 +150,7 @@ void setup()
   timer.setInterval(1000L, syncWidgets);
   timer.setInterval(5000L, printWifiData);
   timer.setInterval(5000L, printCurrentNet);
+  timer.setInterval(1000L, handleDisplay);
 }
 
 
@@ -259,10 +267,18 @@ void printCurrentNet() {
 String printTime() {
   String orario = "";
   // Start printing elements as individuals
-  orario+= myRTC.hours;
-  orario+=":";
-  orario+= myRTC.minutes;
-  orario+=":";
-  orario+= myRTC.seconds;
+  orario += myRTC.hours;
+  orario += ":";
+  orario += myRTC.minutes;
+  orario += ":";
+  orario += myRTC.seconds;
   return orario;
+}
+
+void handleDisplay() {
+    lcd.clear();
+    String time = "Time ";
+    time += printTime();
+    lcd.setCursor(0,0);
+    lcd.print(time);
 }
