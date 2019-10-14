@@ -2,6 +2,7 @@
 #include <SPI.h>
 #include <WiFiNINA.h>
 #include <BlynkSimpleWiFiNINA.h>
+#include <virtuabotixRTC.h>
 
 #define DHTPIN 2
 #define IRPIN 12
@@ -19,12 +20,14 @@ float humLimit = 75;
 float tempLimit = 25;
 
 //Forse mi servirà un nuovo token
-char auth[] = "KjRZz0ewLqAP38p2kX6_TqnLXuWoYumK";
+char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
 unsigned long lastNotification;
 unsigned long currentMillis;
 const unsigned long delayNotificationMillis = 60000;
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
+virtuabotixRTC myRTC(7, 6, 5);
+
 
 WidgetTerminal terminal(V1);
 
@@ -73,7 +76,8 @@ void sendSensor()
       notificationAllowed[EVHUM] = false;
       String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
       notifica += h;
-      notifica += "%";
+      notifica += "% alle:";
+      notifica += printTime();
       //Blynk.email("Umidità", notifica); //Esempio di email
       Blynk.notify(notifica);
     }
@@ -87,7 +91,9 @@ void sendSensor()
       notificationAllowed[EVTEMP] = false;
       String notifica = "La temperatura ha raggiunto valori troppo elevati: ";
       notifica += t;
-      notifica += " C";
+      notifica += " C alle";
+      notifica += printTime();
+
       //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
     }
@@ -101,9 +107,11 @@ void sendSensor()
     terminal.println("Movimento Rilevato");
     if (notificationAllowed[EVMOV] == true) {
       notificationAllowed[EVMOV] = false;
-      String notifica = "Rilevato un movimento!";
+      String notifica = "Rilevato un movimento! Alle ";
+      notifica += printTime();
       //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
+      
     }
   }
   else {
@@ -116,6 +124,10 @@ void setup()
 {
   Serial.begin(9600);
   Blynk.begin(auth, ssid, pass);
+    // Set the current date, and time in the following format:
+  // seconds, minutes, hours, day of the week, day of the month, month, year
+  
+  myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
   lastNotification = millis();
   syncWidgets();
@@ -129,15 +141,16 @@ void setup()
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
   timer.setInterval(5000L, debugSystem);
   timer.setInterval(1000L, syncWidgets);
-
-
+  timer.setInterval(5000L, printWifiData);
+  timer.setInterval(5000L, printCurrentNet);
 }
+
 
 void loop()
 {
   Blynk.run();
   timer.run();
-
+  myRTC.updateTime();
 }
 
 //Per il movimento è necessario usare timer per resettare le notifiche
@@ -191,4 +204,65 @@ BLYNK_WRITE(V2)  {
   humLimit = param.asFloat();
   terminal.print("Hum Limit: ");
   terminal.println(humLimit);
+}
+
+void printWifiData() {
+  // print your board's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+  Serial.println(ip);
+
+  // print your MAC address:
+  byte mac[6];
+  WiFi.macAddress(mac);
+  Serial.print("MAC address: ");
+  printMacAddress(mac);
+}
+
+void printMacAddress(byte mac[]) {
+  for (int i = 5; i >= 0; i--) {
+    if (mac[i] < 16) {
+      Serial.print("0");
+    }
+    Serial.print(mac[i], HEX);
+    if (i > 0) {
+      Serial.print(":");
+    }
+  }
+  Serial.println();
+}
+
+void printCurrentNet() {
+  // print the SSID of the network you're attached to:
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print the MAC address of the router you're attached to:
+  byte bssid[6];
+  WiFi.BSSID(bssid);
+  Serial.print("BSSID: ");
+  printMacAddress(bssid);
+
+  // print the received signal strength:
+  long rssi = WiFi.RSSI();
+  Serial.print("signal strength (RSSI):");
+  Serial.println(rssi);
+
+  // print the encryption type:
+  byte encryption = WiFi.encryptionType();
+  Serial.print("Encryption Type:");
+  Serial.println(encryption, HEX);
+  Serial.println();
+}
+
+String printTime() {
+  String orario = "";
+  // Start printing elements as individuals
+  orario+= myRTC.hours;
+  orario+=":";
+  orario+= myRTC.minutes;
+  orario+=":";
+  orario+= myRTC.seconds;
+  return orario;
 }
