@@ -20,8 +20,8 @@ hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44
 #define EVTEMP 1
 #define EVMOV 2
 
-float humLimit = 75;
-float tempLimit = 25;
+int humLimit = 75;
+int tempLimit = 25;
 
 //Forse mi servirà un nuovo token
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
@@ -66,7 +66,7 @@ void sendSensor()
 {
   terminal.flush(); //mi assicuro che il terminale non arrivi spezzettato
 
-  float h = dht.readHumidity();
+  int h = dht.readHumidity();
   float t = dht.readTemperature(); // or dht.readTemperature(true) for Fahrenheit
 
   if (isnan(h) || isnan(t)) {
@@ -219,8 +219,8 @@ void sendData()
   }
 
   int hum = dht.readHumidity();
-  int tem = dht.readTemperature(); // or dht.readTemperature(true) for 
-  String string_temperature =  String(tem, DEC); 
+  float tem = dht.readTemperature(); // or dht.readTemperature(true) for 
+  String string_temperature =  String(tem, 1); 
   String string_humidity =  String(hum, DEC); 
   String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + string_temperature + "&humidity=" + string_humidity;
   Serial.print("requesting URL: ");
