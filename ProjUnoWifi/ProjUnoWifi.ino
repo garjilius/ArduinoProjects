@@ -217,6 +217,7 @@ void sendData()
   int hum = dht.readHumidity();
   float tem = dht.readTemperature(); // or dht.readTemperature(true) for 
   String string_temperature =  String(tem, 1); 
+  string_temperature.replace(".",",");
   String string_humidity =  String(hum, DEC); 
   String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + string_temperature + "&humidity=" + string_humidity;
   Serial.print("requesting URL: ");
