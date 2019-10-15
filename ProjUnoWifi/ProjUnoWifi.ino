@@ -32,6 +32,12 @@ bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5);
 
+//Connessione con google spreadsheet
+const char* host = "script.google.com";
+const int httpsPort = 443;
+String GAS_ID = "AKfycbyJgvc9Kg3UzkkN_IDy4rPSexJGnunSMjsVoP5gS6J2tvXId6MM";   // Google App Script id
+WiFiSSLClient client;
+
 
 WidgetTerminal terminal(V1);
 
@@ -147,8 +153,12 @@ void setup()
   pinMode(SYSLED, OUTPUT);
   dht.begin();
 
-  // Setup a function to be called every second
+  //Mando i dati per la prima volta a google senza attendere il delay
+  sendData();
+  // Ogni secondo invia i sensori all'app
   timer.setInterval(1000L, sendSensor);
+  //Ogni minuto invia i sensori a google
+    timer.setInterval(600000L, sendData);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
   timer.setInterval(5000L, debugSystem);
   timer.setInterval(1000L, syncWidgets);
@@ -157,6 +167,7 @@ void setup()
   timer.setInterval(60000L, printCurrentNet);
   //Aggiorna i dati sul display
   timer.setInterval(1000L, handleDisplay);
+ 
 }
 
 
@@ -173,7 +184,6 @@ void enableMovementNotification() {
 }
 
 void debugSystem() {
-  terminal.println("");
   terminal.print("HumLimit:" );
   terminal.println(humLimit);
   terminal.print("TempLimit: ");
@@ -197,6 +207,45 @@ void debugSystem() {
     terminal.println("Sistem Enabled");
   }
 }
+
+// Function for Send data into Google Spreadsheet
+void sendData()
+{
+  Serial.print("connecting to ");
+  Serial.println(host);
+  if (!client.connect(host, httpsPort)) {
+    Serial.println("connection failed");
+    return;
+  }
+
+  int hum = dht.readHumidity();
+  int tem = dht.readTemperature(); // or dht.readTemperature(true) for 
+  String string_temperature =  String(tem, DEC); 
+  String string_humidity =  String(hum, DEC); 
+  String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + string_temperature + "&humidity=" + string_humidity;
+  Serial.print("requesting URL: ");
+  Serial.println(url);
+
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+         "Host: " + host + "\r\n" +
+         "User-Agent: BuildFailureDetectorESP8266\r\n" +
+         "Connection: close\r\n\r\n");
+
+  Serial.println("request sent");
+  while (client.connected()) {
+  String line = client.readStringUntil('\n');
+  if (line == "\r") {
+    Serial.println("headers received");
+    break;
+  }
+  }
+  String line = client.readStringUntil('\n');
+  Serial.println("reply was:");
+  Serial.println("==========");
+  Serial.println(line);
+  Serial.println("==========");
+  Serial.println("closing connection");
+} 
 
 void syncWidgets() {
   Blynk.virtualWrite(V3, tempLimit);
