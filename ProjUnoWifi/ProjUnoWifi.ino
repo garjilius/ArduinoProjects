@@ -13,7 +13,6 @@
 #define SYSLED 11
 hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44780 chip
 
-
 #define BLYNK_PRINT Serial
 
 //La posizione degli elementi del'array notifiche relativi ai vari eventi
@@ -219,7 +218,6 @@ void printWifiData() {
   IPAddress ip = WiFi.localIP();
   Serial.print("IP Address: ");
   Serial.println(ip);
-  Serial.println(ip);
 
   // print your MAC address:
   byte mac[6];
@@ -266,7 +264,6 @@ void printCurrentNet() {
 
 String printTime() {
   String orario = "";
-  // Start printing elements as individuals
   orario += myRTC.hours;
   orario += ":";
   orario += myRTC.minutes;
