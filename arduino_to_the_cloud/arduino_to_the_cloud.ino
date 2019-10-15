@@ -68,7 +68,7 @@ void loop()
 }
 
 // Function for Send data into Google Spreadsheet
-void sendData(int tem, int hum)
+void sendData(int tem, int hum, int mov)
 {
   Serial.print("connecting to ");
   Serial.println(host);
