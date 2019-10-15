@@ -37,12 +37,17 @@ WidgetTerminal terminal(V1);
 
 
 // Uncomment whatever type you're using!
-//#define DHTTYPE DHT11     // DHT 11
-#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
+#define DHTTYPE DHT11     // DHT 11
+//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 //#define DHTTYPE DHT21   // DHT 21, AM2301
 
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
+/*
+char ssid[] = "***REMOVED***";
+char pass[] = "***REMOVED***";
+*/
+
 char ssid[] = "***REMOVED***";
 char pass[] = "***REMOVED***";
 
@@ -60,7 +65,7 @@ void sendSensor()
 
   if (isnan(h) || isnan(t)) {
     Serial.println("Failed to read from DHT sensor!");
-    return;
+    //return; -> Non mi conviene far arrestare il programma se non viene letto il sensore
   }
 
   Blynk.virtualWrite(V5, h);
@@ -147,8 +152,10 @@ void setup()
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
   timer.setInterval(5000L, debugSystem);
   timer.setInterval(1000L, syncWidgets);
-  timer.setInterval(5000L, printWifiData);
-  timer.setInterval(5000L, printCurrentNet);
+  //Informazioni sulla rete ogni minuto
+  timer.setInterval(60000L, printWifiData);
+  timer.setInterval(60000L, printCurrentNet);
+  //Aggiorna i dati sul display
   timer.setInterval(1000L, handleDisplay);
 }
 

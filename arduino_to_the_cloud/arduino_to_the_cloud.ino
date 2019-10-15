@@ -8,10 +8,11 @@
 // Modifyed by Moz for Youtube changel logMaker360 for this video: https://youtu.be/fS0GeaOkNRw 24-02-2018
 // update ssid, password and GAS_ID ->  AKfycbyJgvc9Kg3UzkkN_IDy4rPSexJGnunSMjsVoP5gS6J2tvXId6MM
 //-----------------------------------------------
-#include <ESP8266WiFi.h>
-#include <WiFiClientSecure.h>
+#include <DHT.h>
+#include <SPI.h>
+#include <WiFiNINA.h>
 #include<DHT.h>
-#define DHTPIN D2
+#define DHTPIN 2
 #define DHTTYPE DHT11 
  
 DHT dht(DHTPIN, DHTTYPE);
