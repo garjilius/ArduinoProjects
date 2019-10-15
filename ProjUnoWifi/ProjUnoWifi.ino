@@ -41,8 +41,6 @@ WiFiSSLClient client;
 
 WidgetTerminal terminal(V1);
 
-
-// Uncomment whatever type you're using!
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 //#define DHTTYPE DHT21   // DHT 21, AM2301
@@ -88,7 +86,7 @@ void sendSensor()
   //GESTISCO LE NOTIFICHE DEI SENSORI
   if (h > humLimit) {
     if (notificationAllowed[EVHUM] == true) {
-      notificationAllowed[EVHUM] = false;
+      notificationAllowed[EVHUM] = false; //Se ho appena lanciato una notifica, non notifico più se prima il valore non era sceso sotto il limite impostato
       String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
       notifica += h;
       notifica += "% alle:";
@@ -98,17 +96,16 @@ void sendSensor()
     }
   }
   else {
-    notificationAllowed[EVHUM] = true;
+    notificationAllowed[EVHUM] = true; //Riattivo le notifiche se era sceso sotto la soglia
   }
 
   if (t > tempLimit) {
     if (notificationAllowed[EVTEMP] == true) {
-      notificationAllowed[EVTEMP] = false;
+      notificationAllowed[EVTEMP] = false; //
       String notifica = "La temperatura ha raggiunto valori troppo elevati: ";
       notifica += t;
       notifica += " C alle";
       notifica += printTime();
-
       //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
     }
@@ -126,7 +123,6 @@ void sendSensor()
       notifica += printTime();
       //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
-
     }
   }
   else {
@@ -143,7 +139,6 @@ void setup()
   lcd.print("Initializing...");
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
-
   myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
   lastNotification = millis();
@@ -161,6 +156,7 @@ void setup()
     timer.setInterval(600000L, sendData);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
   timer.setInterval(5000L, debugSystem);
+  //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
   timer.setInterval(1000L, syncWidgets);
   //Informazioni sulla rete ogni minuto
   timer.setInterval(60000L, printWifiData);
