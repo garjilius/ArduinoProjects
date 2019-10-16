@@ -22,11 +22,12 @@ hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44
 
 int humLimit = 75;
 int tempLimit = 25;
+long int googleInterval = 300000L;
 
 //Forse mi servirà un nuovo token
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
-unsigned long lastNotification;
-unsigned long currentMillis;
+//unsigned long lastNotification;
+//unsigned long currentMillis;
 const unsigned long delayNotificationMillis = 60000;
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
@@ -48,8 +49,8 @@ WidgetTerminal terminal(V1);
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
 /*
-char ssid[] = "iChief 6s";
-char pass[] = "garjiliusnet27";
+  char ssid[] = "iChief 6s";
+  char pass[] = "garjiliusnet27";
 */
 
 char ssid[] = "Garjilius";
@@ -141,19 +142,25 @@ void setup()
   // seconds, minutes, hours, day of the week, day of the month, month, year
   myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
-  lastNotification = millis();
+  //lastNotification = millis();
   syncWidgets();
 
   pinMode(MOVLED, OUTPUT);
   pinMode(SYSLED, OUTPUT);
   dht.begin();
 
+  String fv = WiFi.firmwareVersion();
+  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
+    Serial.print("Please upgrade the firmware. Installed: ");
+    Serial.println(fv);
+  }
+
   //Mando i dati per la prima volta a google senza attendere il delay
   sendData();
   // Ogni secondo invia i sensori all'app
   timer.setInterval(1000L, sendSensor);
   //Ogni minuto invia i sensori a google
-    timer.setInterval(600000L, sendData);
+  timer.setInterval(googleInterval, sendData);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
   timer.setInterval(5000L, debugSystem);
   //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
@@ -163,7 +170,7 @@ void setup()
   timer.setInterval(60000L, printCurrentNet);
   //Aggiorna i dati sul display
   timer.setInterval(1000L, handleDisplay);
- 
+
 }
 
 
@@ -215,26 +222,26 @@ void sendData()
   }
 
   int hum = dht.readHumidity();
-  float tem = dht.readTemperature(); // or dht.readTemperature(true) for 
-  String string_temperature =  String(tem, 1); 
-  string_temperature.replace(".",",");
-  String string_humidity =  String(hum, DEC); 
+  float tem = dht.readTemperature(); // or dht.readTemperature(true) for
+  String string_temperature =  String(tem, 1);
+  string_temperature.replace(".", ",");
+  String string_humidity =  String(hum, DEC);
   String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + string_temperature + "&humidity=" + string_humidity;
   Serial.print("requesting URL: ");
   Serial.println(url);
 
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-         "Host: " + host + "\r\n" +
-         "User-Agent: BuildFailureDetectorESP8266\r\n" +
-         "Connection: close\r\n\r\n");
+               "Host: " + host + "\r\n" +
+               "User-Agent: BuildFailureDetectorESP8266\r\n" +
+               "Connection: close\r\n\r\n");
 
   Serial.println("request sent");
   while (client.connected()) {
-  String line = client.readStringUntil('\n');
-  if (line == "\r") {
-    Serial.println("headers received");
-    break;
-  }
+    String line = client.readStringUntil('\n');
+    if (line == "\r") {
+      Serial.println("headers received");
+      break;
+    }
   }
   String line = client.readStringUntil('\n');
   Serial.println("reply was:");
@@ -242,7 +249,7 @@ void sendData()
   Serial.println(line);
   Serial.println("==========");
   Serial.println("closing connection");
-} 
+}
 
 void syncWidgets() {
   Blynk.virtualWrite(V3, tempLimit);
@@ -326,9 +333,9 @@ String printTime() {
 }
 
 void handleDisplay() {
-    lcd.clear();
-    String time = "Time ";
-    time += printTime();
-    lcd.setCursor(0,0);
-    lcd.print(time);
+  lcd.clear();
+  String time = "Time ";
+  time += printTime();
+  lcd.setCursor(0, 0);
+  lcd.print(time);
 }
