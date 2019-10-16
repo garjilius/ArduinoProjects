@@ -11,6 +11,8 @@
 #define IRPIN 12
 #define MOVLED 13
 #define SYSLED 11
+#define WIFILED 10
+
 hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44780 chip
 
 #define BLYNK_PRINT Serial
@@ -170,7 +172,8 @@ void setup()
   timer.setInterval(60000L, printCurrentNet);
   //Aggiorna i dati sul display
   timer.setInterval(1000L, handleDisplay);
-
+  //Controllo il led che indica connessione wifi
+  timer.setInterval(1000L, checkWifi);
 }
 
 
@@ -338,4 +341,12 @@ void handleDisplay() {
   time += printTime();
   lcd.setCursor(0, 0);
   lcd.print(time);
+}
+
+void checkWifi() {
+  if (WiFi.status() != WL_CONNECTED) {
+    digitalWrite(WIFILED, LOW);
+  } else {
+    digitalWrite(WIFILED, HIGH);
+  }
 }
