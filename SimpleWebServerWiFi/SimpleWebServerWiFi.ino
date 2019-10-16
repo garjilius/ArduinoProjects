@@ -95,16 +95,16 @@ void loop() {
            client.println("<meta name='apple-mobile-web-app-capable' content='yes' />");
            client.println("<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />");
            client.println("<link rel='stylesheet' type='text/css' href='http://www.progettiarduino.com/uploads/8/1/0/8/81088074/style3.css' />");
-           client.println("<TITLE>Controllo Dispositivi da Remoto</TITLE>");
+           client.println("<TITLE>Control Panel</TITLE>");
            client.println("</HEAD>");
            client.println("<BODY>");
-           client.println("<H1>Pannello di Controllo</H1>");
+           client.println("<H1>Control Panel</H1>");
            client.println("<hr />");
            client.println("<br />");  
-           client.println("<H2>Benvenuto, Emanuele</H2>");
+           client.println("<H2>Welcome, Emanuele</H2>");
            client.println("<br />");  
-           client.println("<a href=\"/?button1on\"\">Accendi LED 1</a>");          //Modifica a tuo piacimento:"Accendi LED 1"
-           client.println("<a href=\"/?button1off\"\">Spegni LED 1</a><br />");    //Modifica a tuo piacimento:"Spegni LED 1" 
+           client.println("<a href=\"/?button1on\"\">ON - LED 1</a>");          //Modifica a tuo piacimento:"Accendi LED 1"
+           client.println("<a href=\"/?button1off\"\">OFF - LED 1</a><br />");    //Modifica a tuo piacimento:"Spegni LED 1" 
            client.println("<br />");  
            client.println("<br />");
 
