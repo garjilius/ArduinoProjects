@@ -177,7 +177,7 @@ void setup()
   //Ogni minuto invia i sensori a google
   timer.setInterval(logInterval, sendData);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
-  timer.setInterval(5000L, debugSystem);
+  timer.setInterval(10000L, debugSystem);
   //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
   timer.setInterval(1000L, syncWidgets);
   //Informazioni sulla rete ogni minuto
@@ -241,7 +241,7 @@ void sendData()
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
-      Serial.println("headers received");
+      Serial.println("Logged to Google Sheets");
       break;
     }
   }
@@ -251,7 +251,8 @@ void sendData()
 void logData() {
   //Loggando ogni dato, mi segno anche se nel frattempo il log via wifi stava fallendo, in modo da poterli poi recuperare
   String dataString = "";
-  dataString += printDate();
+  //dataString += printDate();
+  dataString +="17/10/2019 21.17.16";
   dataString += " ";
   dataString += temp;
   dataString += " ";
@@ -268,7 +269,8 @@ void logData() {
     dataFile.println(dataString);
     dataFile.close();
     // print to the serial port too:
-    // Serial.println(dataString);
+    Serial.print("LoggedToSD: ");
+    Serial.println(dataString);
   }
   // if the file isn't open, pop up an error:
   else {
@@ -300,8 +302,8 @@ void recovery() {
           return;
         }
         String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum + "&date=" + date;
-        Serial.print("requesting URL: ");
-        Serial.println(url);
+        //Serial.print("requesting URL: ");
+        //Serial.println(url);
 
         client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                      "Host: " + host + "\r\n" +
