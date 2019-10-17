@@ -22,6 +22,8 @@ hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44
 #define EVTEMP 1
 #define EVMOV 2
 
+int hum;
+float temp;
 int humLimit = 75;
 int tempLimit = 25;
 long int googleInterval = 300000L;
@@ -67,16 +69,10 @@ void sendSensor()
 {
   terminal.flush(); //mi assicuro che il terminale non arrivi spezzettato
 
-  int h = dht.readHumidity();
-  float t = dht.readTemperature(); // or dht.readTemperature(true) for Fahrenheit
+  readData();
 
-  if (isnan(h) || isnan(t)) {
-    Serial.println("Failed to read from DHT sensor!");
-    //return; -> Non mi conviene far arrestare il programma se non viene letto il sensore
-  }
-
-  Blynk.virtualWrite(V5, h);
-  Blynk.virtualWrite(V6, t);
+  Blynk.virtualWrite(V5, hum);
+  Blynk.virtualWrite(V6, temp);
 
   //IL SISTEMA VIENE DISABILITATO MA DOPO AVERE COMUNQUE PRESO TEMP E HUM
   if (systemDisabled == 1) {
@@ -87,11 +83,11 @@ void sendSensor()
   digitalWrite(SYSLED, HIGH);
 
   //GESTISCO LE NOTIFICHE DEI SENSORI
-  if (h > humLimit) {
+  if (hum > humLimit) {
     if (notificationAllowed[EVHUM] == true) {
       notificationAllowed[EVHUM] = false; //Se ho appena lanciato una notifica, non notifico più se prima il valore non era sceso sotto il limite impostato
       String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
-      notifica += h;
+      notifica += hum;
       notifica += "% alle:";
       notifica += printTime();
       //Blynk.email("Umidità", notifica); //Esempio di email
@@ -102,11 +98,11 @@ void sendSensor()
     notificationAllowed[EVHUM] = true; //Riattivo le notifiche se era sceso sotto la soglia
   }
 
-  if (t > tempLimit) {
+  if (temp > tempLimit) {
     if (notificationAllowed[EVTEMP] == true) {
       notificationAllowed[EVTEMP] = false; //
       String notifica = "La temperatura ha raggiunto valori troppo elevati: ";
-      notifica += t;
+      notifica += temp;
       notifica += " C alle";
       notifica += printTime();
       //Blynk.email("Temperatura", notifica); //Esempio di email
@@ -190,28 +186,12 @@ void enableMovementNotification() {
   notificationAllowed[EVMOV] = true;
 }
 
-void debugSystem() {
-  terminal.print("HumLimit:" );
-  terminal.println(humLimit);
-  terminal.print("TempLimit: ");
-  terminal.println(tempLimit);
-  for (int i = 0; i < 3; i++) {
-    if (notificationAllowed[i]) {
-      terminal.print(i);
-      terminal.print(":allowed at ms ");
-    }
-    else {
-      terminal.print(i);
-      terminal.print(":NOT ALLOWED at ms ");
-    }
-    terminal.println(millis());
-    terminal.flush();
-  }
-  if (systemDisabled == 1) {
-    terminal.println("System Disabled");
-  }
-  else {
-    terminal.println("Sistem Enabled");
+void readData() {
+  hum = dht.readHumidity();
+  temp = dht.readTemperature();
+  if (isnan(hum) || isnan(temp)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
   }
 }
 
@@ -225,9 +205,8 @@ void sendData()
     return;
   }
 
-  int hum = dht.readHumidity();
-  float tem = dht.readTemperature(); // or dht.readTemperature(true) for
-  String string_temperature =  String(tem, 1);
+  readData();
+  String string_temperature =  String(temp, 1);
   string_temperature.replace(".", ",");
   String string_humidity =  String(hum, DEC);
   String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + string_temperature + "&humidity=" + string_humidity;
@@ -255,6 +234,7 @@ void sendData()
   Serial.println("closing connection");
 }
 
+//Questa sezione mette sincronizza i valori nell'app con quelli nella memoria di arduino
 void syncWidgets() {
   Blynk.virtualWrite(V3, tempLimit);
   Blynk.virtualWrite(V2, humLimit);
@@ -358,6 +338,7 @@ void handleDisplay() {
   time += printTime();
   lcd.setCursor(0, 0);
   lcd.print(time);
+  lcd.setCursor(0, 1);
 }
 
 void checkWifi() {
@@ -365,5 +346,30 @@ void checkWifi() {
     digitalWrite(WIFILED, LOW);
   } else {
     digitalWrite(WIFILED, HIGH);
+  }
+}
+
+void debugSystem() {
+  terminal.print("HumLimit:" );
+  terminal.println(humLimit);
+  terminal.print("TempLimit: ");
+  terminal.println(tempLimit);
+  for (int i = 0; i < 3; i++) {
+    if (notificationAllowed[i]) {
+      terminal.print(i);
+      terminal.print(":allowed at ms ");
+    }
+    else {
+      terminal.print(i);
+      terminal.print(":NOT ALLOWED at ms ");
+    }
+    terminal.println(millis());
+    terminal.flush();
+  }
+  if (systemDisabled == 1) {
+    terminal.println("System Disabled");
+  }
+  else {
+    terminal.println("Sistem Enabled");
   }
 }
