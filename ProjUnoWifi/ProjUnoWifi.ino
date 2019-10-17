@@ -29,12 +29,13 @@ int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
-//long int logInterval = 300000L;
-long int logInterval = 30000L;
+long int logInterval = 300000L;
+unsigned long upfailedmillis = 0;
+byte failed = 0;
 
 
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
-const unsigned long delayNotificationMillis = 60000;
+const int delayNotificationMillis = 60000;
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5);
@@ -145,49 +146,49 @@ void setup()
   lcd.print("Initializing...");
   if (!SD.begin(chipSelect)) {
     Serial.println("Card failed, or not present");
-    lcd.setCursor(0,2);
+    lcd.setCursor(0, 2);
     lcd.print("Card Error");
     // don't do anything more:
   } else {
-  Serial.println("card initialized.");
-  lcd.print("Card OK");
-}
-// Set the current date, and time in the following format:
-// seconds, minutes, hours, day of the week, day of the month, month, year
-myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
+    Serial.println("card initialized.");
+    lcd.print("Card OK");
+  }
+  // Set the current date, and time in the following format:
+  // seconds, minutes, hours, day of the week, day of the month, month, year
+  myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
-syncWidgets();
+  syncWidgets();
 
-pinMode(MOVLED, OUTPUT);
-pinMode(SYSLED, OUTPUT);
-pinMode(WIFILED, OUTPUT);
-dht.begin();
+  pinMode(MOVLED, OUTPUT);
+  pinMode(SYSLED, OUTPUT);
+  pinMode(WIFILED, OUTPUT);
+  dht.begin();
 
-String fv = WiFi.firmwareVersion();
-if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-  Serial.print("Please upgrade the firmware. Installed: ");
-  Serial.println(fv);
-}
+  String fv = WiFi.firmwareVersion();
+  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
+    Serial.print("Please upgrade the firmware. Installed: ");
+    Serial.println(fv);
+  }
 
-//Mando i dati per la prima volta a google senza attendere il delay
-sendData();
-// Ogni secondo invia i sensori all'app
-timer.setInterval(1000L, sendSensor);
-//Ogni minuto invia i sensori a google
-timer.setInterval(logInterval, sendData);
-//Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
-timer.setInterval(5000L, debugSystem);
-//Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
-timer.setInterval(1000L, syncWidgets);
-//Informazioni sulla rete ogni minuto
-timer.setInterval(60000L, printWifiData);
-timer.setInterval(60000L, printCurrentNet);
-//Aggiorna i dati sul display
-timer.setInterval(1000L, handleDisplay);
-//Controllo il led che indica connessione wifi
-timer.setInterval(1000L, checkWifi);
-//Loggo i dati su sd ogni tot tempo
-timer.setInterval(logInterval,logData);
+  //Mando i dati per la prima volta a google senza attendere il delay
+  sendData();
+  // Ogni secondo invia i sensori all'app
+  timer.setInterval(1000L, sendSensor);
+  //Ogni minuto invia i sensori a google
+  timer.setInterval(logInterval, sendData);
+  //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
+  timer.setInterval(5000L, debugSystem);
+  //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
+  timer.setInterval(1000L, syncWidgets);
+  //Informazioni sulla rete ogni minuto
+  timer.setInterval(60000L, printWifiData);
+  timer.setInterval(60000L, printCurrentNet);
+  //Aggiorna i dati sul display
+  timer.setInterval(1000L, handleDisplay);
+  //Controllo il led che indica connessione wifi
+  timer.setInterval(1000L, checkWifi);
+  //Loggo i dati su sd ogni tot tempo
+  timer.setInterval(5000, logData);
 }
 
 
@@ -212,9 +213,16 @@ void sendData()
   Serial.println(host);
   if (!client.connect(host, httpsPort)) {
     Serial.println("connection failed");
+    upfailedmillis = millis();
+    failed = 1; //Mi segno che è fallito, così so di dover rifare l'upload dalla SD
     return;
   }
 
+  //Se aveva perso la connessione ma la ritrova, inizia il processo di recovery e non manda ulteriori dati su spreadsheet finchè non ha concluso
+  if (failed = 1) {
+    recovery();
+    return;
+  }
   readData();
   String string_temperature =  String(temp, 1);
   string_temperature.replace(".", ",");
@@ -250,11 +258,14 @@ void sendData()
 }
 
 void logData() {
-   String dataString = "Temp: ";
-    dataString += temp;
-    dataString += "C, Hum: ";
-    dataString += hum;
-    dataString += "%";
+  String dataString = "";
+  dataString += millis(); //Salvo i millis di ogni dato loggato, così poi riuppo tutti quelli non presenti sul server
+  dataString += " ";
+  dataString += printDate();
+  dataString += " ";
+  dataString += temp;
+  dataString += " ";
+  dataString += hum;
 
   // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
@@ -270,6 +281,38 @@ void logData() {
   // if the file isn't open, pop up an error:
   else {
     Serial.println("error opening log file");
+  }
+}
+
+//L'idea di questa funzione è che se c'era stato un errore di connessione ma poi la connessione torna,
+//allora vengono caricati su google i dati che erano mancanti
+void recovery() {
+  File myFile;
+  myFile = SD.open("LOG.TXT");
+  if (myFile) {
+    Serial.println("File Aperto:");
+
+    // read from the file until there's nothing else in it:
+    while (myFile.available()) {
+      String milliseconds =  myFile.readStringUntil(' ');
+      String date = myFile.readStringUntil(' ');
+      String temp = myFile.readStringUntil(' ');
+      String hum = myFile.readStringUntil(' ');
+      Serial.print("Millis ");
+      Serial.print(milliseconds);
+      Serial.print(" Date ");
+      Serial.print(date);
+      Serial.print( " Temp ");
+      Serial.print(temp);
+      Serial.print( " Hum ");
+      Serial.print(hum);
+
+    }
+    // close the file:
+    myFile.close();
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println("error opening test.txt");
   }
 }
 
@@ -394,6 +437,8 @@ void checkWifi() {
 }
 
 void debugSystem() {
+  //Serial.print("LOGCOUNTER: ");
+  //Serial.println(logcounter);
   terminal.print("HumLimit:" );
   terminal.println(humLimit);
   terminal.print("TempLimit: ");
