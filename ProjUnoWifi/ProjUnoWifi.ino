@@ -182,6 +182,7 @@ void loop()
   Blynk.run();
   timer.run();
   myRTC.updateTime();
+  Serial.println(printDate());
 }
 
 //Per il movimento è necessario usare timer per resettare le notifiche
@@ -331,6 +332,22 @@ String printTime() {
   orario += ":";
   orario += myRTC.minutes;
   orario += ":";
+  orario += myRTC.seconds;
+  return orario;
+}
+
+
+String printDate() {
+  String orario = "";
+  orario += myRTC.dayofmonth;
+  orario += "/";
+  orario += myRTC.month;
+  orario += "/";
+  orario += myRTC.year;
+  orario += myRTC.hours;
+  orario += ".";
+  orario += myRTC.minutes;
+  orario += ".";
   orario += myRTC.seconds;
   return orario;
 }
