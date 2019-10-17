@@ -9,7 +9,7 @@
 
 #define DHTPIN 2
 #define IRPIN 9
-#define MOVLED 8
+#define MOVLED 5
 #define SYSLED 4
 #define WIFILED 3
 
