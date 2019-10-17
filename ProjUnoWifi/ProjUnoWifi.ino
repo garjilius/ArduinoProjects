@@ -29,7 +29,9 @@ int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
-long int googleInterval = 300000L;
+//long int logInterval = 300000L;
+long int logInterval = 30000L;
+
 
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
 const unsigned long delayNotificationMillis = 60000;
@@ -172,7 +174,7 @@ sendData();
 // Ogni secondo invia i sensori all'app
 timer.setInterval(1000L, sendSensor);
 //Ogni minuto invia i sensori a google
-timer.setInterval(googleInterval, sendData);
+timer.setInterval(logInterval, sendData);
 //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
 timer.setInterval(5000L, debugSystem);
 //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
@@ -184,6 +186,8 @@ timer.setInterval(60000L, printCurrentNet);
 timer.setInterval(1000L, handleDisplay);
 //Controllo il led che indica connessione wifi
 timer.setInterval(1000L, checkWifi);
+//Loggo i dati su sd ogni tot tempo
+timer.setInterval(logInterval,logData);
 }
 
 
@@ -243,6 +247,30 @@ void sendData()
     }
     Serial.println("=========="); */
   Serial.println("closing connection");
+}
+
+void logData() {
+   String dataString = "Temp: ";
+    dataString += temp;
+    dataString += "C, Hum: ";
+    dataString += hum;
+    dataString += "%";
+
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+  File dataFile = SD.open("log.txt", FILE_WRITE);
+
+  // if the file is available, write to it:
+  if (dataFile) {
+    dataFile.println(dataString);
+    dataFile.close();
+    // print to the serial port too:
+    Serial.println(dataString);
+  }
+  // if the file isn't open, pop up an error:
+  else {
+    Serial.println("error opening log file");
+  }
 }
 
 //Questa sezione mette sincronizza i valori nell'app con quelli nella memoria di arduino
