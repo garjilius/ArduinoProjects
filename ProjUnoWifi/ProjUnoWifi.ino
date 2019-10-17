@@ -8,6 +8,7 @@
 #include <hd44780ioClass/hd44780_I2Cexp.h> // include i/o class header //
 #include <SPI.h>
 #include <SD.h>
+#include <EEPROM.h>
 
 #define DHTPIN 2
 #define IRPIN 9
@@ -24,20 +25,17 @@ hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44
 #define EVTEMP 1
 #define EVMOV 2
 const int chipSelect = 8;
-int connFailureDelay = 60000; //tempo dopo il quale viene deciso che ormai ci si sarebbe dovuti connettere
 unsigned long time_init = 0;
-byte failed = 0;
-
 
 int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
-long int logInterval = 10000L;
-
+long int logInterval = 30000L;
+byte statusWritten = 0;
+byte needRecovery = 0;
 
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
-const int delayNotificationMillis = 60000;
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5);
@@ -57,12 +55,8 @@ DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
 
 char ssid[] = "***REMOVED***";
+//char ssid[] = "***REMOVED***";
 char pass[] = "***REMOVED***";
-
-/*
-  char ssid[] = "***REMOVED***";
-  char pass[] = "***REMOVED***";
-*/
 
 BLYNK_CONNECTED() {
   // Request Blynk server to re-send latest values for all pins
@@ -79,9 +73,7 @@ void loop()
 void sendSensor()
 {
   terminal.flush(); //mi assicuro che il terminale non arrivi spezzettato
-
   readData();
-
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
 
@@ -174,6 +166,12 @@ void setup()
     Serial.println(fv);
   }
 
+  EEPROM.get(0, needRecovery);
+  if (needRecovery == 1) {
+    Serial.println("Lines need recovery");
+    recovery();
+  }
+
   // Ogni secondo invia i sensori all'app
   timer.setInterval(1000L, sendSensor);
   //Ogni minuto invia i sensori a google
@@ -188,7 +186,7 @@ void setup()
   //Aggiorna i dati sul display
   timer.setInterval(1000L, handleDisplay);
   //Controllo il led che indica connessione wifi
-  timer.setInterval(10000L, checkWifi);
+  timer.setInterval(5000L, checkWifi);
   //Loggo i dati su sd ogni tot tempo
   timer.setInterval(logInterval, logData);
 }
@@ -212,25 +210,20 @@ void readData() {
 void sendData()
 {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.print("No Connection");
+    Serial.println("No Connection");
+    if (needRecovery != 1) {
+      needRecovery = 1;
+      EEPROM.write(0, needRecovery);
+    }
     return;
   }
   Serial.print("connecting to ");
   Serial.println(host);
   if (!client.connect(host, httpsPort)) {
-    Serial.println("connection failed");
-    if (millis() > time_init + connFailureDelay) {
-      Serial.print("Connection Failure Declared");
-      failed = 1; //Mi segno che è fallito, così so di dover rifare l'upload dalla SD. Solo se però in passato c'era stata connessione
-    }
+    Serial.println("Connection failed");
     return;
   }
 
-  //Se aveva perso la connessione ma la ritrova, inizia il processo di recovery e non manda ulteriori dati su spreadsheet finchè non ha concluso
-  if (failed == 1) {
-    recovery();
-    return;
-  }
   readData();
   String string_temperature =  String(temp, 1);
   string_temperature.replace(".", ",");
@@ -252,16 +245,6 @@ void sendData()
       break;
     }
   }
-  /*
-    String line = client.readStringUntil('\n');
-    Serial.println("reply was:");
-    Serial.println("==========");
-    //Serial.println(line);
-    while (client.available()) {
-    char c = client.read();
-    Serial.print(c);
-    }
-    Serial.println("=========="); */
   Serial.println("closing connection");
 }
 
@@ -274,8 +257,7 @@ void logData() {
   dataString += " ";
   dataString += hum;
   dataString += " ";
-  dataString += failed;
-
+  dataString += needRecovery;
 
   // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
@@ -309,15 +291,15 @@ void recovery() {
       String date = myFile.readStringUntil(' ');
       String temp = myFile.readStringUntil(' ');
       String hum = myFile.readStringUntil(' ');
-      String failedStatus = myFile.readStringUntil('\r');
-      int hadConnection = failedStatus.toInt();
+      String needRecovery = myFile.readStringUntil('\r');
+      int toRecover = needRecovery.toInt();
 
-      if (hadConnection == 1) {
+      if (toRecover == 1) {
         if (!client.connect(host, httpsPort)) {
           Serial.println("Recovery failed");
           return;
         }
-        String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum;
+        String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum + "&date=" + date;
         Serial.print("requesting URL: ");
         Serial.println(url);
 
@@ -336,8 +318,16 @@ void recovery() {
         }
       }
     }
-    failed = 0;
     myFile.close();
+    bool fileRemoved = SD.remove("LOG.TXT");
+    if (fileRemoved) {
+      Serial.println("Log/Recovery file succesfully removed");
+    } else {
+      Serial.println("Failed deleting log file");
+    }
+    needRecovery = 0;
+
+    EEPROM.write(0, needRecovery);
   } else {
     // if the file didn't open, print an error:
     Serial.println("error opening test.txt");
@@ -459,16 +449,15 @@ void handleDisplay() {
 void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
-    //Se non è connesso, riprovo ostinatamente a connettermi
-    Blynk.begin(auth, ssid, pass);
   } else {
     digitalWrite(WIFILED, HIGH);
   }
 }
 
 void debugSystem() {
-  //Serial.print("LOGCOUNTER: ");
-  //Serial.println(logcounter);
+
+  Serial.print("NeedRecovery?: ");
+  Serial.println(needRecovery);
   terminal.print("HumLimit:" );
   terminal.println(humLimit);
   terminal.print("TempLimit: ");
