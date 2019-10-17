@@ -8,10 +8,10 @@
 #include <hd44780ioClass/hd44780_I2Cexp.h> // include i/o class header //
 
 #define DHTPIN 2
-#define IRPIN 12
-#define MOVLED 13
-#define SYSLED 11
-#define WIFILED 10
+#define IRPIN 9
+#define MOVLED 8
+#define SYSLED 4
+#define WIFILED 3
 
 hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44780 chip
 
@@ -339,11 +339,11 @@ void handleDisplay() {
   lcd.setCursor(0, 0);
   lcd.print(time);
   lcd.setCursor(0, 1);
-  lcd.print("Hum: ");
+  lcd.print("H: ");
   lcd.print(hum);
-  lcd.print("%  Temp: ");
+  lcd.print("% T: ");
   lcd.print(temp);
-  lcd.println("C");
+  lcd.print("C");
 }
 
 void checkWifi() {
