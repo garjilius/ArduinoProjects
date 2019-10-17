@@ -6,6 +6,8 @@
 #include <Wire.h>
 #include <hd44780.h>
 #include <hd44780ioClass/hd44780_I2Cexp.h> // include i/o class header //
+#include <SPI.h>
+#include <SD.h>
 
 #define DHTPIN 2
 #define IRPIN 9
@@ -21,6 +23,7 @@ hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44
 #define EVHUM 0
 #define EVTEMP 1
 #define EVMOV 2
+const int chipSelect = 8;
 
 int hum;
 float temp;
@@ -39,8 +42,6 @@ const char* host = "script.google.com";
 const int httpsPort = 443;
 String GAS_ID = "AKfycbyJgvc9Kg3UzkkN_IDy4rPSexJGnunSMjsVoP5gS6J2tvXId6MM";   // Google App Script id
 WiFiSSLClient client;
-
-
 WidgetTerminal terminal(V1);
 
 #define DHTTYPE DHT11     // DHT 11
@@ -140,39 +141,49 @@ void setup()
   Blynk.begin(auth, ssid, pass);
   lcd.begin(20, 4);
   lcd.print("Initializing...");
-  // Set the current date, and time in the following format:
-  // seconds, minutes, hours, day of the week, day of the month, month, year
-  myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
+  if (!SD.begin(chipSelect)) {
+    Serial.println("Card failed, or not present");
+    lcd.setCursor(0,2);
+    lcd.print("Card Error");
+    // don't do anything more:
+  } else {
+  Serial.println("card initialized.");
+  lcd.print("Card OK");
+}
+// Set the current date, and time in the following format:
+// seconds, minutes, hours, day of the week, day of the month, month, year
+myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
-  syncWidgets();
+syncWidgets();
 
-  pinMode(MOVLED, OUTPUT);
-  pinMode(SYSLED, OUTPUT);
-  dht.begin();
+pinMode(MOVLED, OUTPUT);
+pinMode(SYSLED, OUTPUT);
+pinMode(WIFILED, OUTPUT);
+dht.begin();
 
-  String fv = WiFi.firmwareVersion();
-  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-    Serial.print("Please upgrade the firmware. Installed: ");
-    Serial.println(fv);
-  }
+String fv = WiFi.firmwareVersion();
+if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
+  Serial.print("Please upgrade the firmware. Installed: ");
+  Serial.println(fv);
+}
 
-  //Mando i dati per la prima volta a google senza attendere il delay
-  sendData();
-  // Ogni secondo invia i sensori all'app
-  timer.setInterval(1000L, sendSensor);
-  //Ogni minuto invia i sensori a google
-  timer.setInterval(googleInterval, sendData);
-  //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
-  timer.setInterval(5000L, debugSystem);
-  //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
-  timer.setInterval(1000L, syncWidgets);
-  //Informazioni sulla rete ogni minuto
-  timer.setInterval(60000L, printWifiData);
-  timer.setInterval(60000L, printCurrentNet);
-  //Aggiorna i dati sul display
-  timer.setInterval(1000L, handleDisplay);
-  //Controllo il led che indica connessione wifi
-  timer.setInterval(1000L, checkWifi);
+//Mando i dati per la prima volta a google senza attendere il delay
+sendData();
+// Ogni secondo invia i sensori all'app
+timer.setInterval(1000L, sendSensor);
+//Ogni minuto invia i sensori a google
+timer.setInterval(googleInterval, sendData);
+//Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
+timer.setInterval(5000L, debugSystem);
+//Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
+timer.setInterval(1000L, syncWidgets);
+//Informazioni sulla rete ogni minuto
+timer.setInterval(60000L, printWifiData);
+timer.setInterval(60000L, printCurrentNet);
+//Aggiorna i dati sul display
+timer.setInterval(1000L, handleDisplay);
+//Controllo il led che indica connessione wifi
+timer.setInterval(1000L, checkWifi);
 }
 
 
@@ -222,15 +233,15 @@ void sendData()
     }
   }
   /*
-  String line = client.readStringUntil('\n');
-  Serial.println("reply was:");
-  Serial.println("==========");
-  //Serial.println(line);
-  while (client.available()) {
+    String line = client.readStringUntil('\n');
+    Serial.println("reply was:");
+    Serial.println("==========");
+    //Serial.println(line);
+    while (client.available()) {
     char c = client.read();
     Serial.print(c);
-  }
-  Serial.println("=========="); */
+    }
+    Serial.println("=========="); */
   Serial.println("closing connection");
 }
 
