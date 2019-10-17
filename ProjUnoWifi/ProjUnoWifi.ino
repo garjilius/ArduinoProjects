@@ -28,10 +28,7 @@ int humLimit = 75;
 int tempLimit = 25;
 long int googleInterval = 300000L;
 
-//Forse mi servirà un nuovo token
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
-//unsigned long lastNotification;
-//unsigned long currentMillis;
 const unsigned long delayNotificationMillis = 60000;
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
@@ -63,6 +60,13 @@ char pass[] = "***REMOVED***";
 BLYNK_CONNECTED() {
   // Request Blynk server to re-send latest values for all pins
   Blynk.syncAll();
+}
+
+void loop()
+{
+  Blynk.run();
+  timer.run();
+  myRTC.updateTime();
 }
 
 void sendSensor()
@@ -140,7 +144,6 @@ void setup()
   // seconds, minutes, hours, day of the week, day of the month, month, year
   myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
-  //lastNotification = millis();
   syncWidgets();
 
   pinMode(MOVLED, OUTPUT);
@@ -172,14 +175,6 @@ void setup()
   timer.setInterval(1000L, checkWifi);
 }
 
-
-void loop()
-{
-  Blynk.run();
-  timer.run();
-  myRTC.updateTime();
-  Serial.println(printDate());
-}
 
 //Per il movimento è necessario usare timer per resettare le notifiche
 void enableMovementNotification() {
@@ -226,11 +221,16 @@ void sendData()
       break;
     }
   }
+  /*
   String line = client.readStringUntil('\n');
   Serial.println("reply was:");
   Serial.println("==========");
-  Serial.println(line);
-  Serial.println("==========");
+  //Serial.println(line);
+  while (client.available()) {
+    char c = client.read();
+    Serial.print(c);
+  }
+  Serial.println("=========="); */
   Serial.println("closing connection");
 }
 
