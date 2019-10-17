@@ -31,8 +31,7 @@ int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
-long int logInterval = 30000L;
-byte statusWritten = 0;
+long int logInterval = 600000L;
 byte needRecovery = 0;
 
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
@@ -167,8 +166,8 @@ void setup()
   }
 
   EEPROM.get(0, needRecovery);
-  if (needRecovery == 1) {
-    Serial.println("Lines need recovery");
+  if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
+    Serial.println("Lines need recovery, Network Available");
     recovery();
   }
 
@@ -181,14 +180,16 @@ void setup()
   //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
   timer.setInterval(1000L, syncWidgets);
   //Informazioni sulla rete ogni minuto
-  timer.setInterval(60000L, printWifiData);
-  timer.setInterval(60000L, printCurrentNet);
+  //timer.setInterval(60000L, printWifiData);
+  //timer.setInterval(60000L, printCurrentNet);
   //Aggiorna i dati sul display
   timer.setInterval(1000L, handleDisplay);
   //Controllo il led che indica connessione wifi
   timer.setInterval(5000L, checkWifi);
   //Loggo i dati su sd ogni tot tempo
   timer.setInterval(logInterval, logData);
+  //Eseguo il recovery manager periodicamente
+  timer.setInterval(120000, recoveryManager);
 }
 
 
@@ -245,18 +246,30 @@ void sendData()
       break;
     }
   }
+/*
+  String line = client.readStringUntil('\n');
+  Serial.println("reply was:");
+  Serial.println("==========");
+  //Serial.println(line);
+  while (client.available()) {
+    char c = client.read();
+    Serial.print(c);
+  }
+  Serial.println("=========="); */
   Serial.println("closing connection");
 }
 
 void logData() {
-  //Loggando ogni dato, mi segno anche se nel frattempo il log via wifi stava fallendo, in modo da poterli poi recuperare
-  String dataString = "";
+  String string_temperature =  String(temp, 1);
+  string_temperature.replace(".", ",");
+  String string_humidity =  String(hum, DEC);
+  String dataString;
   //dataString += printDate();
-  dataString +="17/10/2019 21.17.16";
+  dataString += "17/10/2019-21.17.16";
   dataString += " ";
-  dataString += temp;
+  dataString += string_temperature;
   dataString += " ";
-  dataString += hum;
+  dataString += string_humidity;
   dataString += " ";
   dataString += needRecovery;
 
@@ -291,19 +304,30 @@ void recovery() {
     // read from the file until there's nothing else in it:
     while (myFile.available()) {
       String date = myFile.readStringUntil(' ');
+      date.replace("\n",""); //Per qualche motivo sembrano esserci degli a capo
+      date.replace("\r",""); 
       String temp = myFile.readStringUntil(' ');
       String hum = myFile.readStringUntil(' ');
       String needRecovery = myFile.readStringUntil('\r');
       int toRecover = needRecovery.toInt();
-
+      /*Serial.print("Date: ");
+      Serial.println(date);
+      Serial.print("Hour: ");
+      Serial.print("Temp: ");
+      Serial.println(temp);
+      Serial.print("Hum: ");
+      Serial.println(hum);
+      Serial.print("ToRecover: ");
+      Serial.println(toRecover);*/
       if (toRecover == 1) {
         if (!client.connect(host, httpsPort)) {
           Serial.println("Recovery failed");
           return;
         }
+        Serial.println("Recovering Line...");
         String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum + "&date=" + date;
-        //Serial.print("requesting URL: ");
-        //Serial.println(url);
+        Serial.print("requesting URL: ");
+        Serial.println(url);
 
         client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                      "Host: " + host + "\r\n" +
@@ -311,6 +335,10 @@ void recovery() {
                      "Connection: close\r\n\r\n");
 
         Serial.println("request sent");
+        while (client.available()) {
+          char c = client.read();
+          Serial.print(c);
+        }
         while (client.connected()) {
           String line = client.readStringUntil('\n');
           if (line == "\r") {
@@ -321,12 +349,12 @@ void recovery() {
       }
     }
     myFile.close();
-    bool fileRemoved = SD.remove("LOG.TXT");
-    if (fileRemoved) {
+      bool fileRemoved = SD.remove("LOG.TXT");
+      if (fileRemoved) {
       Serial.println("Log/Recovery file succesfully removed");
-    } else {
+      } else {
       Serial.println("Failed deleting log file");
-    }
+      }
     needRecovery = 0;
 
     EEPROM.write(0, needRecovery);
@@ -426,6 +454,7 @@ String printDate() {
   orario += myRTC.month;
   orario += "/";
   orario += myRTC.year;
+  orario += "-";
   orario += myRTC.hours;
   orario += ".";
   orario += myRTC.minutes;
@@ -451,6 +480,7 @@ void handleDisplay() {
 void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
+    //Blynk.begin(auth, ssid, pass); Riconnessione, ma è bloccante: Se non c'è rete si ferma tutto
   } else {
     digitalWrite(WIFILED, HIGH);
   }
@@ -481,5 +511,11 @@ void debugSystem() {
   }
   else {
     terminal.println("Sistem Enabled");
+  }
+}
+
+void recoveryManager() {
+  if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
+    recovery();
   }
 }
