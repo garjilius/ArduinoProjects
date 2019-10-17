@@ -339,6 +339,11 @@ void handleDisplay() {
   lcd.setCursor(0, 0);
   lcd.print(time);
   lcd.setCursor(0, 1);
+  lcd.print("Hum: ");
+  lcd.print(hum);
+  lcd.print("%  Temp: ");
+  lcd.print(temp);
+  lcd.println("C");
 }
 
 void checkWifi() {
