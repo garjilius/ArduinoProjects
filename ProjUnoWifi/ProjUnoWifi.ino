@@ -24,14 +24,16 @@ hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44
 #define EVTEMP 1
 #define EVMOV 2
 const int chipSelect = 8;
+int connFailureDelay = 60000; //tempo dopo il quale viene deciso che ormai ci si sarebbe dovuti connettere
+unsigned long time_init = 0;
+byte failed = 0;
+
 
 int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
-long int logInterval = 300000L;
-unsigned long upfailedmillis = 0;
-byte failed = 0;
+long int logInterval = 10000L;
 
 
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
@@ -53,13 +55,14 @@ WidgetTerminal terminal(V1);
 
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
+
+char ssid[] = "iChief 6s";
+char pass[] = "garjiliusnet27";
+
 /*
-  char ssid[] = "iChief 6s";
+  char ssid[] = "Garjilius";
   char pass[] = "garjiliusnet27";
 */
-
-char ssid[] = "Garjilius";
-char pass[] = "garjiliusnet27";
 
 BLYNK_CONNECTED() {
   // Request Blynk server to re-send latest values for all pins
@@ -143,10 +146,11 @@ void setup()
   Serial.begin(9600);
   Blynk.begin(auth, ssid, pass);
   lcd.begin(20, 4);
+  lcd.setCursor(0, 0);
   lcd.print("Initializing...");
+  lcd.setCursor(0, 2);
   if (!SD.begin(chipSelect)) {
     Serial.println("Card failed, or not present");
-    lcd.setCursor(0, 2);
     lcd.print("Card Error");
     // don't do anything more:
   } else {
@@ -170,8 +174,6 @@ void setup()
     Serial.println(fv);
   }
 
-  //Mando i dati per la prima volta a google senza attendere il delay
-  sendData();
   // Ogni secondo invia i sensori all'app
   timer.setInterval(1000L, sendSensor);
   //Ogni minuto invia i sensori a google
@@ -186,9 +188,9 @@ void setup()
   //Aggiorna i dati sul display
   timer.setInterval(1000L, handleDisplay);
   //Controllo il led che indica connessione wifi
-  timer.setInterval(1000L, checkWifi);
+  timer.setInterval(10000L, checkWifi);
   //Loggo i dati su sd ogni tot tempo
-  timer.setInterval(5000, logData);
+  timer.setInterval(logInterval, logData);
 }
 
 
@@ -209,17 +211,23 @@ void readData() {
 // Function for Send data into Google Spreadsheet
 void sendData()
 {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.print("No Connection");
+    return;
+  }
   Serial.print("connecting to ");
   Serial.println(host);
   if (!client.connect(host, httpsPort)) {
     Serial.println("connection failed");
-    upfailedmillis = millis();
-    failed = 1; //Mi segno che è fallito, così so di dover rifare l'upload dalla SD
+    if (millis() > time_init + connFailureDelay) {
+      Serial.print("Connection Failure Declared");
+      failed = 1; //Mi segno che è fallito, così so di dover rifare l'upload dalla SD. Solo se però in passato c'era stata connessione
+    }
     return;
   }
 
   //Se aveva perso la connessione ma la ritrova, inizia il processo di recovery e non manda ulteriori dati su spreadsheet finchè non ha concluso
-  if (failed = 1) {
+  if (failed == 1) {
     recovery();
     return;
   }
@@ -258,14 +266,16 @@ void sendData()
 }
 
 void logData() {
+  //Loggando ogni dato, mi segno anche se nel frattempo il log via wifi stava fallendo, in modo da poterli poi recuperare
   String dataString = "";
-  dataString += millis(); //Salvo i millis di ogni dato loggato, così poi riuppo tutti quelli non presenti sul server
-  dataString += " ";
   dataString += printDate();
   dataString += " ";
   dataString += temp;
   dataString += " ";
   dataString += hum;
+  dataString += " ";
+  dataString += failed;
+
 
   // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
@@ -276,7 +286,7 @@ void logData() {
     dataFile.println(dataString);
     dataFile.close();
     // print to the serial port too:
-    Serial.println(dataString);
+    // Serial.println(dataString);
   }
   // if the file isn't open, pop up an error:
   else {
@@ -287,28 +297,46 @@ void logData() {
 //L'idea di questa funzione è che se c'era stato un errore di connessione ma poi la connessione torna,
 //allora vengono caricati su google i dati che erano mancanti
 void recovery() {
+  //ATTENZIONE! QUANDO FACCIO IL RECOVERY DEVO POI RICORDARMI DI PASSARGLI LA DATA ORIGINALE!
+  Serial.println("Entering Recovery...");
   File myFile;
   myFile = SD.open("LOG.TXT");
   if (myFile) {
-    Serial.println("File Aperto:");
+    Serial.println("Recovery File Opened");
 
     // read from the file until there's nothing else in it:
     while (myFile.available()) {
-      String milliseconds =  myFile.readStringUntil(' ');
       String date = myFile.readStringUntil(' ');
       String temp = myFile.readStringUntil(' ');
       String hum = myFile.readStringUntil(' ');
-      Serial.print("Millis ");
-      Serial.print(milliseconds);
-      Serial.print(" Date ");
-      Serial.print(date);
-      Serial.print( " Temp ");
-      Serial.print(temp);
-      Serial.print( " Hum ");
-      Serial.print(hum);
+      String failedStatus = myFile.readStringUntil('\r');
+      int hadConnection = failedStatus.toInt();
 
+      if (hadConnection == 1) {
+        if (!client.connect(host, httpsPort)) {
+          Serial.println("Recovery failed");
+          return;
+        }
+        String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum;
+        Serial.print("requesting URL: ");
+        Serial.println(url);
+
+        client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+                     "Host: " + host + "\r\n" +
+                     "User-Agent: BuildFailureDetectorESP8266\r\n" +
+                     "Connection: close\r\n\r\n");
+
+        Serial.println("request sent");
+        while (client.connected()) {
+          String line = client.readStringUntil('\n');
+          if (line == "\r") {
+            Serial.println("Line recovered");
+            break;
+          }
+        }
+      }
     }
-    // close the file:
+    failed = 0;
     myFile.close();
   } else {
     // if the file didn't open, print an error:
@@ -431,6 +459,8 @@ void handleDisplay() {
 void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
+    //Se non è connesso, riprovo ostinatamente a connettermi
+    Blynk.begin(auth, ssid, pass);
   } else {
     digitalWrite(WIFILED, HIGH);
   }
