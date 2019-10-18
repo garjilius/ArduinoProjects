@@ -237,6 +237,7 @@ void setup()
   Serial.begin(9600);
   Blynk.begin(auth, ssid, pass);
   server.begin();                           // start the web server on port 80
+  terminal.clear(); //Svuoto il terminale blynk
   lcd.begin(20, 4);
   lcd.setCursor(0, 0);
   lcd.print("Initializing...");
@@ -280,7 +281,7 @@ void setup()
   //Ogni minuto invia i sensori a google
   timer.setInterval(logInterval, sendData);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
-  timer.setInterval(3000L, debugSystem);
+  //timer.setInterval(3000L, debugSystem);
   //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
   timer.setInterval(1000L, syncWidgets);
   //Informazioni sulla rete ogni minuto
@@ -584,6 +585,8 @@ void checkWifi() {
     digitalWrite(WIFILED, HIGH);
   }
 }
+
+
 
 void debugSystem() {
 
