@@ -35,7 +35,7 @@ int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
-long int logInterval = 30000L;
+long int logInterval = 60000L;
 byte needRecovery = 0;
 
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
@@ -57,8 +57,8 @@ WidgetTerminal terminal(V1);
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
 
-char ssid[] = "***REMOVED***";
 //char ssid[] = "***REMOVED***";
+char ssid[] = "***REMOVED***";
 char pass[] = "***REMOVED***";
 
 BLYNK_CONNECTED() {
@@ -99,7 +99,7 @@ void loop()
           client.println("<HEAD>");
           client.println("<meta name='apple-mobile-web-app-capable' content='yes' />");
           client.println("<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />");
-          client.println("<link rel='stylesheet' type='text/css' href='http://www.progettiarduino.com/uploads/8/1/0/8/81088074/style2.css' />");
+          client.println("<link rel='stylesheet' type='text/css' href='http://www.progettiarduino.com/uploads/8/1/0/8/81088074/style3.css' />");
           client.println("<TITLE>Control Panel</TITLE>");
           client.println("</HEAD>");
           client.println("<BODY>");
@@ -108,8 +108,8 @@ void loop()
           client.println("<br />");
           client.println("<H2>Welcome, Emanuele</H2>");
           client.println("<br />");
-          client.println("<a href=\"/?reset\"\">Reset Logs</a>");          //Modifica a tuo piacimento:"Accendi LED 1"
-          client.println("<a href=\"/?recovery\"\">Recovery</a><br />");    //Modifica a tuo piacimento:"Spegni LED 1"
+          client.println("<a href=\"/?reset\"\">Reset Logs</a>");          //Resetta i log so google sheets
+          client.println("<a href=\"/?recovery\"\">Recovery</a><br />");    //Link che avvia la modalità recovery
           client.println("<br />");
           client.println("Recovery syncs to google sheets data that has been logged when offline");
           client.println("<br />");
@@ -124,16 +124,13 @@ void loop()
           //Controlli su Arduino: Se è stato premuto il pulsante sul webserver
           //QUI CI VA TUTTA LA LOGICA CHE GESTISCE GLI INPUT
           if (readString.indexOf("?recovery") > 0) {
-            if(needRecovery==1) {
-            recovery();
-            }
+            recoveryManager();
           }
           if (readString.indexOf("?reset") > 0) {
-            Serial.println("Devo scrivere la funzione di reset sheets");
+            resetSheets();
           }
           //Cancella la stringa una volta letta
           readString = "";
-
         }
       }
     }
@@ -432,7 +429,7 @@ void recovery() {
     EEPROM.write(0, needRecovery);
   } else {
     // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
+    Serial.println("error opening log file");
   }
 }
 
@@ -589,5 +586,30 @@ void debugSystem() {
 void recoveryManager() {
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
     recovery();
+  }
+  else {
+    Serial.println("NO RECOVERY NEEDED!");
+  }
+}
+
+void resetSheets() {
+  if (!client.connect(host, httpsPort)) {
+    Serial.println("Connection failed");
+    return;
+  }
+  String url = "/macros/s/" + GAS_ID + "/exec?reset=1";
+
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "User-Agent: BuildFailureDetectorESP8266\r\n" +
+               "Connection: close\r\n\r\n");
+
+  Serial.println("Reset request sent");
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
+    if (line == "\r") {
+      Serial.println("Google Sheets Reset: SUCCESS");
+      break;
+    }
   }
 }
