@@ -113,6 +113,7 @@ void loop()
           client.println("<br />");
           client.println("Recovery syncs to google sheets data that has been logged when offline");
           client.println("<br />");
+          client.println("Reset Logs deletes the log file from the SD Card");
           client.println("<br />");
 
           client.println("<br />");
@@ -127,7 +128,9 @@ void loop()
             recoveryManager();
           }
           if (readString.indexOf("?reset") > 0) {
-            resetSheets();
+            Serial.println("Il reset di google fogli ha problemi, funzione disabilitata");
+            deleteSDLog();
+            //resetSheets();
           }
           //Cancella la stringa una volta letta
           readString = "";
@@ -592,7 +595,8 @@ void recoveryManager() {
   }
 }
 
-void resetSheets() {
+/*
+  void resetSheets() {
   if (!client.connect(host, httpsPort)) {
     Serial.println("Connection failed");
     return;
@@ -611,5 +615,14 @@ void resetSheets() {
       Serial.println("Google Sheets Reset: SUCCESS");
       break;
     }
+  }
+  } */
+
+void deleteSDLog() {
+  bool fileRemoved = SD.remove("LOG.TXT");
+  if (fileRemoved) {
+    Serial.println("Log/Recovery file succesfully removed");
+  } else {
+    Serial.println("Failed deleting log file");
   }
 }
