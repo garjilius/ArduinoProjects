@@ -91,7 +91,6 @@ void loop()
         if (c == '\n') {
           Serial.println(readString); //scrivi sul monitor seriale per debugging
 
-          //QUESTO LO SOSTITUISCO CON LA PAGINA WEB DELLA SD
           client.println("HTTP/1.1 200 OK"); //Invio nuova pagina
           client.println("Content-Type: text/html");
           client.println();
@@ -100,10 +99,10 @@ void loop()
           client.println("<meta name='apple-mobile-web-app-capable' content='yes' />");
           client.println("<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />");
           client.println("<link rel='stylesheet' type='text/css' href='http://www.progettiarduino.com/uploads/8/1/0/8/81088074/style3.css' />");
-          client.println("<TITLE>Control Panel</TITLE>");
+          client.println("<TITLE>Arduino Control Panel</TITLE>");
           client.println("</HEAD>");
           client.println("<BODY>");
-          client.println("<H1>Control Panel</H1>");
+          client.println("<H1>Arduino Control Panel</H1>");
           client.println("<hr />");
           client.println("<br />");
           client.println("<H2>Welcome, Emanuele</H2>");
@@ -116,8 +115,21 @@ void loop()
           client.println("<br />");
           client.println("Reset Logs deletes the log file from the SD Card");
           client.println("<br />");
+          client.println("<form action="">");
+          client.println("Frequenza Logging (minuti)");
+          int minInterval = logInterval / 60;
+          minInterval = minInterval /1000;
+          String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
+          interval+= minInterval;
+          interval+= ">";
+          //client.println("<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=10>");
+          client.println(interval);
+          client.println("<input type=\"submit\">");
+          client.println("</form>");
 
           client.println("<br />");
+          client.println("<br />");
+
           client.println("</BODY>");
           client.println("</HTML>");
 
@@ -135,6 +147,18 @@ void loop()
           if (readString.indexOf("?deleteSD") > 0) {
             Serial.println("Il reset di google fogli ha problemi, funzione disabilitata");
             deleteSDLog();
+          }
+          if (readString.indexOf("?logInterval") > 0) {
+            Serial.println(readString); //Da Rimuovere
+            int startIndex = readString.indexOf("=") +1 ;
+            int endIndex = readString.indexOf("HTTP") - 1;
+            String intervalString = readString.substring(startIndex, endIndex); //Devo estrarre il valore intero che indica l'intervallo
+            //Serial.println(intervalString);
+            int minInterval = intervalString.toInt();
+            Serial.println(minInterval);
+            logInterval = 60L * 1000L * intervalString.toInt(); //Forzo il valore a diventare un long
+            Serial.print("Intervallo di aggiornamento settato a: ");
+            Serial.println(logInterval);
           }
           //Cancella la stringa una volta letta
           readString = "";
@@ -425,12 +449,7 @@ void recovery() {
       }
     }
     myFile.close();
-    bool fileRemoved = SD.remove("LOG.TXT");
-    if (fileRemoved) {
-      Serial.println("Log/Recovery file succesfully removed");
-    } else {
-      Serial.println("Failed deleting log file");
-    }
+    deleteSDLog();
     needRecovery = 0;
 
     EEPROM.write(0, needRecovery);
@@ -599,8 +618,8 @@ void recoveryManager() {
   }
 }
 
-/*
-  void resetSheets() {
+
+void resetSheets() {
   if (!client.connect(host, httpsPort)) {
     Serial.println("Connection failed");
     return;
@@ -620,7 +639,7 @@ void recoveryManager() {
       break;
     }
   }
-  } */
+}
 
 void deleteSDLog() {
   bool fileRemoved = SD.remove("LOG.TXT");
