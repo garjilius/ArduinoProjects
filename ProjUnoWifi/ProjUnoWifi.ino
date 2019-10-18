@@ -12,7 +12,6 @@
 
 #define DHTPIN 2
 #define IRPIN 9
-#define MOVLED 5
 #define SYSLED 4
 #define WIFILED 3
 
@@ -29,7 +28,6 @@ String readString;
 #define EVTEMP 1
 #define EVMOV 2
 const int chipSelect = 8;
-unsigned long time_init = 0;
 
 int hum;
 float temp;
@@ -41,7 +39,7 @@ byte needRecovery = 0;
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
-virtuabotixRTC myRTC(7, 6, 5);
+virtuabotixRTC myRTC(7, 6, 5); //Configurazione pin orologio
 
 //Connessione con google spreadsheet
 const char* host = "script.google.com";
@@ -89,7 +87,7 @@ void loop()
 
         //Se la richiesta HTTP è andata a buon fine
         if (c == '\n') {
-          Serial.println(readString); //scrivi sul monitor seriale per debugging
+          //Serial.println(readString); //scrivi sul monitor seriale per debugging
 
           client.println("HTTP/1.1 200 OK"); //Invio nuova pagina
           client.println("Content-Type: text/html");
@@ -107,21 +105,24 @@ void loop()
           client.println("<br />");
           client.println("<H2>Welcome, Emanuele</H2>");
           client.println("<br />");
-          client.println("<a href=\"/?reset\"\">Delete SD Logs</a>");
-          client.println("<a href=\"/?deleteSD\"\">Delete Google Sheets Logs</a>");          //Resetta i log so google sheets
+          client.println("<a href=\"/?deleteSD\"\">Delete SD Logs</a>");
+          client.println("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>");          //Resetta i log so google sheets
           client.println("<a href=\"/?recovery\"\">Recovery</a><br />");    //Link che avvia la modalità recovery
           client.println("<br />");
-          client.println("Recovery syncs to google sheets data that has been logged when offline");
+          client.println("Delete SD Logs: deletes the log file from the SD Card");
           client.println("<br />");
-          client.println("Reset Logs deletes the log file from the SD Card");
+          client.println("Delete Google Sheets Logs: deletes the log from Google Sheets");
           client.println("<br />");
+          client.println("Recovery: syncs to google sheets data that has been logged when offline");
+          client.println("<br />");
+
           client.println("<form action="">");
           client.println("Frequenza Logging (minuti)");
           int minInterval = logInterval / 60;
-          minInterval = minInterval /1000;
+          minInterval = minInterval / 1000;
           String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
-          interval+= minInterval;
-          interval+= ">";
+          interval += minInterval;
+          interval += ">";
           //client.println("<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=10>");
           client.println(interval);
           client.println("<input type=\"submit\">");
@@ -135,13 +136,11 @@ void loop()
 
           delay(1);
           client.stop();
-          //Controlli su Arduino: Se è stato premuto il pulsante sul webserver
-          //QUI CI VA TUTTA LA LOGICA CHE GESTISCE GLI INPUT
+          //Controlli su Arduino: Se è stato premuto un pulsante sul webserver
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
           }
           if (readString.indexOf("?reset") > 0) {
-            Serial.println("Il reset di google fogli ha problemi, funzione disabilitata");
             resetSheets();
           }
           if (readString.indexOf("?deleteSD") > 0) {
@@ -149,8 +148,7 @@ void loop()
             deleteSDLog();
           }
           if (readString.indexOf("?logInterval") > 0) {
-            Serial.println(readString); //Da Rimuovere
-            int startIndex = readString.indexOf("=") +1 ;
+            int startIndex = readString.indexOf("=") + 1 ;
             int endIndex = readString.indexOf("HTTP") - 1;
             String intervalString = readString.substring(startIndex, endIndex); //Devo estrarre il valore intero che indica l'intervallo
             //Serial.println(intervalString);
@@ -178,7 +176,6 @@ void sendSensor()
   //IL SISTEMA VIENE DISABILITATO MA DOPO AVERE COMUNQUE PRESO TEMP E HUM
   if (systemDisabled == 1) {
     digitalWrite(SYSLED, LOW);
-    digitalWrite(MOVLED, LOW);
     return; //Se il sistema è disabilitato, non fa nulla
   }
   digitalWrite(SYSLED, HIGH);
@@ -215,7 +212,6 @@ void sendSensor()
   }
 
   if (digitalRead(IRPIN) == HIGH) {
-    //digitalWrite(MOVLED, HIGH);
     terminal.println("Movimento Rilevato");
     if (notificationAllowed[EVMOV] == true) {
       notificationAllowed[EVMOV] = false;
@@ -226,8 +222,7 @@ void sendSensor()
     }
   }
   else {
-    digitalWrite(MOVLED, LOW);
-    timer.setInterval(60000L, enableMovementNotification);
+    timer.setInterval(60000L, enableMovementNotification); //attenzione, così facendo la abilita ogni tot secondi indipendentemente dal movimento
   }
 }
 
@@ -241,12 +236,11 @@ void setup()
   lcd.print("Initializing...");
   lcd.setCursor(0, 2);
   if (!SD.begin(chipSelect)) {
-    Serial.println("Card failed, or not present");
-    lcd.print("Card Error");
-    // don't do anything more:
+    Serial.println("SD Card failed, or not present");
+    lcd.print("SDCard Error");
   } else {
     Serial.println("card initialized.");
-    lcd.print("Card OK");
+    lcd.print("SD Card OK");
   }
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
@@ -254,7 +248,6 @@ void setup()
 
   syncWidgets();
 
-  pinMode(MOVLED, OUTPUT);
   pinMode(SYSLED, OUTPUT);
   pinMode(WIFILED, OUTPUT);
   dht.begin();
@@ -276,7 +269,7 @@ void setup()
   //Ogni minuto invia i sensori a google
   timer.setInterval(logInterval, sendData);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
-  timer.setInterval(10000L, debugSystem);
+  timer.setInterval(300000L, debugSystem);
   //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
   timer.setInterval(1000L, syncWidgets);
   //Informazioni sulla rete ogni minuto
@@ -355,8 +348,8 @@ void sendData()
       char c = client.read();
       Serial.print(c);
     }
-    Serial.println("=========="); */
-  Serial.println("closing connection");
+    Serial.println("=========="); 
+  Serial.println("closing connection"); */
 }
 
 void logData() {
@@ -614,7 +607,7 @@ void recoveryManager() {
     recovery();
   }
   else {
-    Serial.println("NO RECOVERY NEEDED!");
+    Serial.println("NO CONNECTION OR NO RECOVERY NEEDED!");
   }
 }
 
