@@ -108,7 +108,8 @@ void loop()
           client.println("<br />");
           client.println("<H2>Welcome, Emanuele</H2>");
           client.println("<br />");
-          client.println("<a href=\"/?reset\"\">Reset Logs</a>");          //Resetta i log so google sheets
+          client.println("<a href=\"/?reset\"\">Delete SD Logs</a>");
+          client.println("<a href=\"/?deleteSD\"\">Delete Google Sheets Logs</a>");          //Resetta i log so google sheets
           client.println("<a href=\"/?recovery\"\">Recovery</a><br />");    //Link che avvia la modalità recovery
           client.println("<br />");
           client.println("Recovery syncs to google sheets data that has been logged when offline");
@@ -129,8 +130,11 @@ void loop()
           }
           if (readString.indexOf("?reset") > 0) {
             Serial.println("Il reset di google fogli ha problemi, funzione disabilitata");
+            resetSheets();
+          }
+          if (readString.indexOf("?deleteSD") > 0) {
+            Serial.println("Il reset di google fogli ha problemi, funzione disabilitata");
             deleteSDLog();
-            //resetSheets();
           }
           //Cancella la stringa una volta letta
           readString = "";
