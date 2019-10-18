@@ -110,7 +110,8 @@ void loop()
           client.println("<a href=\"/?recovery\"\">Recovery</a><br/>");    //Link che avvia la modalità recovery
           client.println("<br />");
           client.println("<br />");
-          client.println("<a href=\"/?logNow\"\">Log Now!</a><br/>");    //Salva temperatura e umidità attuali su SD e google spreadsheets
+          client.println("<a href=\"/?logNow\"\">Log Now!</a>");    //Salva temperatura e umidità attuali su SD e google spreadsheets
+          client.println("<a href=\"/?\"\">Reload Page</a><br/>");    
           client.println("<br />");
           client.println("<br />");
           client.println("<form action="">");
