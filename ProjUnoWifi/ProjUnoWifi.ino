@@ -20,6 +20,10 @@ hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44
 
 #define BLYNK_PRINT Serial
 
+int status = WL_IDLE_STATUS;
+WiFiServer server(80);
+String readString;
+
 //La posizione degli elementi del'array notifiche relativi ai vari eventi
 #define EVHUM 0
 #define EVTEMP 1
@@ -31,7 +35,7 @@ int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
-long int logInterval = 600000L;
+long int logInterval = 30000L;
 byte needRecovery = 0;
 
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
@@ -67,6 +71,73 @@ void loop()
   Blynk.run();
   timer.run();
   myRTC.updateTime();
+
+  //SERVER!
+  WiFiClient client = server.available();   // listen for incoming clients
+
+  if (client) {
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+
+        //Leggo i caratteri da HTTP
+        if (readString.length() < 100) {
+          //Inserisco i caratteri nella stringa
+          readString += c;
+          //Serial.print(c);
+        }
+
+        //Se la richiesta HTTP è andata a buon fine
+        if (c == '\n') {
+          Serial.println(readString); //scrivi sul monitor seriale per debugging
+
+          //QUESTO LO SOSTITUISCO CON LA PAGINA WEB DELLA SD
+          client.println("HTTP/1.1 200 OK"); //Invio nuova pagina
+          client.println("Content-Type: text/html");
+          client.println();
+          client.println("<HTML>");
+          client.println("<HEAD>");
+          client.println("<meta name='apple-mobile-web-app-capable' content='yes' />");
+          client.println("<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />");
+          client.println("<link rel='stylesheet' type='text/css' href='http://www.progettiarduino.com/uploads/8/1/0/8/81088074/style2.css' />");
+          client.println("<TITLE>Control Panel</TITLE>");
+          client.println("</HEAD>");
+          client.println("<BODY>");
+          client.println("<H1>Control Panel</H1>");
+          client.println("<hr />");
+          client.println("<br />");
+          client.println("<H2>Welcome, Emanuele</H2>");
+          client.println("<br />");
+          client.println("<a href=\"/?reset\"\">Reset Logs</a>");          //Modifica a tuo piacimento:"Accendi LED 1"
+          client.println("<a href=\"/?recovery\"\">Recovery</a><br />");    //Modifica a tuo piacimento:"Spegni LED 1"
+          client.println("<br />");
+          client.println("Recovery syncs to google sheets data that has been logged when offline");
+          client.println("<br />");
+          client.println("<br />");
+
+          client.println("<br />");
+          client.println("</BODY>");
+          client.println("</HTML>");
+
+          delay(1);
+          client.stop();
+          //Controlli su Arduino: Se è stato premuto il pulsante sul webserver
+          //QUI CI VA TUTTA LA LOGICA CHE GESTISCE GLI INPUT
+          if (readString.indexOf("?recovery") > 0) {
+            if(needRecovery==1) {
+            recovery();
+            }
+          }
+          if (readString.indexOf("?reset") > 0) {
+            Serial.println("Devo scrivere la funzione di reset sheets");
+          }
+          //Cancella la stringa una volta letta
+          readString = "";
+
+        }
+      }
+    }
+  }
 }
 
 void sendSensor()
@@ -116,7 +187,7 @@ void sendSensor()
   }
 
   if (digitalRead(IRPIN) == HIGH) {
-    digitalWrite(MOVLED, HIGH);
+    //digitalWrite(MOVLED, HIGH);
     terminal.println("Movimento Rilevato");
     if (notificationAllowed[EVMOV] == true) {
       notificationAllowed[EVMOV] = false;
@@ -136,6 +207,7 @@ void setup()
 {
   Serial.begin(9600);
   Blynk.begin(auth, ssid, pass);
+  server.begin();                           // start the web server on port 80
   lcd.begin(20, 4);
   lcd.setCursor(0, 0);
   lcd.print("Initializing...");
@@ -168,9 +240,9 @@ void setup()
   EEPROM.get(0, needRecovery);
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
     Serial.println("Lines need recovery, Network Available");
-    recovery();
   }
 
+  printWifiData();
   // Ogni secondo invia i sensori all'app
   timer.setInterval(1000L, sendSensor);
   //Ogni minuto invia i sensori a google
@@ -189,7 +261,7 @@ void setup()
   //Loggo i dati su sd ogni tot tempo
   timer.setInterval(logInterval, logData);
   //Eseguo il recovery manager periodicamente
-  timer.setInterval(120000, recoveryManager);
+  //timer.setInterval(120000, recoveryManager);
 }
 
 
@@ -246,16 +318,16 @@ void sendData()
       break;
     }
   }
-/*
-  String line = client.readStringUntil('\n');
-  Serial.println("reply was:");
-  Serial.println("==========");
-  //Serial.println(line);
-  while (client.available()) {
-    char c = client.read();
-    Serial.print(c);
-  }
-  Serial.println("=========="); */
+  /*
+    String line = client.readStringUntil('\n');
+    Serial.println("reply was:");
+    Serial.println("==========");
+    //Serial.println(line);
+    while (client.available()) {
+      char c = client.read();
+      Serial.print(c);
+    }
+    Serial.println("=========="); */
   Serial.println("closing connection");
 }
 
@@ -304,21 +376,21 @@ void recovery() {
     // read from the file until there's nothing else in it:
     while (myFile.available()) {
       String date = myFile.readStringUntil(' ');
-      date.replace("\n",""); //Per qualche motivo sembrano esserci degli a capo
-      date.replace("\r",""); 
+      date.replace("\n", ""); //Per qualche motivo sembrano esserci degli a capo
+      date.replace("\r", "");
       String temp = myFile.readStringUntil(' ');
       String hum = myFile.readStringUntil(' ');
       String needRecovery = myFile.readStringUntil('\r');
       int toRecover = needRecovery.toInt();
       /*Serial.print("Date: ");
-      Serial.println(date);
-      Serial.print("Hour: ");
-      Serial.print("Temp: ");
-      Serial.println(temp);
-      Serial.print("Hum: ");
-      Serial.println(hum);
-      Serial.print("ToRecover: ");
-      Serial.println(toRecover);*/
+        Serial.println(date);
+        Serial.print("Hour: ");
+        Serial.print("Temp: ");
+        Serial.println(temp);
+        Serial.print("Hum: ");
+        Serial.println(hum);
+        Serial.print("ToRecover: ");
+        Serial.println(toRecover);*/
       if (toRecover == 1) {
         if (!client.connect(host, httpsPort)) {
           Serial.println("Recovery failed");
@@ -349,12 +421,12 @@ void recovery() {
       }
     }
     myFile.close();
-      bool fileRemoved = SD.remove("LOG.TXT");
-      if (fileRemoved) {
+    bool fileRemoved = SD.remove("LOG.TXT");
+    if (fileRemoved) {
       Serial.println("Log/Recovery file succesfully removed");
-      } else {
+    } else {
       Serial.println("Failed deleting log file");
-      }
+    }
     needRecovery = 0;
 
     EEPROM.write(0, needRecovery);
