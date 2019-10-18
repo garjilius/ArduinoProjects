@@ -222,7 +222,7 @@ void sendSensor()
     }
   }
   else {
-    timer.setInterval(60000L, enableMovementNotification); //attenzione, così facendo la abilita ogni tot secondi indipendentemente dal movimento
+    timer.setTimeout(60000L, enableMovementNotification); //attenzione, così facendo la abilita ogni tot secondi indipendentemente dal movimento
   }
 }
 
@@ -269,7 +269,7 @@ void setup()
   //Ogni minuto invia i sensori a google
   timer.setInterval(logInterval, sendData);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
-  timer.setInterval(300000L, debugSystem);
+  timer.setInterval(3000L, debugSystem);
   //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
   timer.setInterval(1000L, syncWidgets);
   //Informazioni sulla rete ogni minuto
