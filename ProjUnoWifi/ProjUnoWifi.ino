@@ -33,7 +33,7 @@ int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
-long int logInterval = 60000L;
+long int logInterval = 600000L;
 byte needRecovery = 0;
 
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
@@ -144,7 +144,6 @@ void loop()
             resetSheets();
           }
           if (readString.indexOf("?deleteSD") > 0) {
-            Serial.println("Il reset di google fogli ha problemi, funzione disabilitata");
             deleteSDLog();
           }
           if (readString.indexOf("?logInterval") > 0) {
