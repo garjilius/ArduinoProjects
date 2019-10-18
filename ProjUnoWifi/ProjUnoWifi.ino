@@ -107,15 +107,12 @@ void loop()
           client.println("<br />");
           client.println("<a href=\"/?deleteSD\"\">Delete SD Logs</a>");
           client.println("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>");          //Resetta i log so google sheets
-          client.println("<a href=\"/?recovery\"\">Recovery</a><br />");    //Link che avvia la modalità recovery
+          client.println("<a href=\"/?recovery\"\">Recovery</a><br/>");    //Link che avvia la modalità recovery
           client.println("<br />");
-          client.println("Delete SD Logs: deletes the log file from the SD Card");
           client.println("<br />");
-          client.println("Delete Google Sheets Logs: deletes the log from Google Sheets");
+          client.println("<a href=\"/?logNow\"\">Log Now!</a><br/>");    //Salva temperatura e umidità attuali su SD e google spreadsheets
           client.println("<br />");
-          client.println("Recovery: syncs to google sheets data that has been logged when offline");
           client.println("<br />");
-
           client.println("<form action="">");
           client.println("Frequenza Logging (minuti)");
           int minInterval = logInterval / 60;
@@ -127,7 +124,12 @@ void loop()
           client.println(interval);
           client.println("<input type=\"submit\">");
           client.println("</form>");
-
+          client.println("<br />");
+          client.println("<b>Delete SD Logs:</b> deletes the log file from the SD Card");
+          client.println("<br />");
+          client.println("<b>Delete Google Sheets Logs:</b> deletes the log from Google Sheets");
+          client.println("<br />");
+          client.println("<b>Recovery:</b> syncs to google sheets data that has been logged when offline");
           client.println("<br />");
           client.println("<br />");
 
@@ -139,6 +141,10 @@ void loop()
           //Controlli su Arduino: Se è stato premuto un pulsante sul webserver
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
+          }
+          if (readString.indexOf("?logNow") > 0) {
+            logData();
+            sendData();
           }
           if (readString.indexOf("?reset") > 0) {
             resetSheets();
@@ -263,6 +269,11 @@ void setup()
   }
 
   printWifiData();
+
+  //Il primo logging fiene fatto a 30s dall'avvio, indipendentemente dal log Interval
+  timer.setTimeout(30000, logData);
+  timer.setTimeout(30000, sendData);
+
   // Ogni secondo invia i sensori all'app
   timer.setInterval(1000L, sendSensor);
   //Ogni minuto invia i sensori a google
@@ -347,8 +358,8 @@ void sendData()
       char c = client.read();
       Serial.print(c);
     }
-    Serial.println("=========="); 
-  Serial.println("closing connection"); */
+    Serial.println("==========");
+    Serial.println("closing connection"); */
 }
 
 void logData() {
