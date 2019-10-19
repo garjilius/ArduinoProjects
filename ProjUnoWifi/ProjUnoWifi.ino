@@ -101,8 +101,11 @@ void loop()
           client.println("<BODY>");
           client.println("<H1>Arduino Control Panel</H1>");
           client.println("<hr />");
-          client.println("<br />");
           client.println("<H2>Welcome, Emanuele</H2>");
+          client.println("<br />");
+          client.println("<img src=\"https://dl.dropbox.com/s/xuidccr2ci1uf3r/project.jpg?dl=0\" alt=\"Circuito\" style=\"width:373px;height:294;\">");
+          client.println("<br />");
+          client.println("<br />");
           client.println("<br />");
           client.println("<a href=\"/?deleteSD\"\">Delete SD Logs</a>");
           client.println("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>");          //Resetta i log so google sheets
