@@ -1,6 +1,5 @@
 #include <DHT.h>
 #include <SPI.h>
-#include <WiFiNINA.h>
 #include <BlynkSimpleWiFiNINA.h>
 #include <virtuabotixRTC.h>
 #include <Wire.h>
@@ -11,7 +10,8 @@
 #include <EEPROM.h>
 #include "arduino_secrets.h"
 
-#define BLYNK_PRINT Serial
+
+//#define BLYNK_PRINT Serial
 #define DHTPIN 2
 #define IRPIN 9
 #define SYSLED 4
@@ -54,6 +54,7 @@ virtuabotixRTC myRTC(7, 6, 5); //Configurazione pin orologio
 //Connessione con google sheets
 const char* host = "script.google.com";
 const int httpsPort = 443;
+
 String GAS_ID = "AKfycbyJgvc9Kg3UzkkN_IDy4rPSexJGnunSMjsVoP5gS6J2tvXId6MM";   // Google App Script id
 
 char ssid[] = SECRET_SSID;
@@ -137,7 +138,6 @@ void loop()
           client.println("</BODY>");
           client.println("</HTML>");
 
-          delay(1);
           client.stop();
           //Passo i comandi ad Arduino in get, insieme all'URL
           if (readString.indexOf("?recovery") > 0) {
@@ -156,17 +156,13 @@ void loop()
           if (readString.indexOf("?logInterval") > 0) {
             int startIndex = readString.indexOf("=") + 1 ;
             int endIndex = readString.indexOf("HTTP") - 1;
-            String intervalString = readString.substring(startIndex, endIndex); //Devo estrarre il valore intero che indica l'intervallo
-            //Serial.println(intervalString);
-            int minInterval = intervalString.toInt();
-            Serial.println(minInterval);
-            logInterval = 60L * 1000L * intervalString.toInt(); //Forzo il valore a diventare un long
+            int minInterval = readString.substring(startIndex, endIndex).toInt();
+            logInterval = 60L * 1000L * minInterval; //Forzo il valore a diventare un long
             timerGoogle = timer.setInterval(logInterval, sendData);
             timerSD = timer.setInterval(logInterval, logData);
             Serial.print("Intervallo di aggiornamento settato a: ");
             Serial.println(logInterval);
           }
-          //Cancella la stringa una volta letta
           readString = "";
         }
       }
@@ -174,9 +170,7 @@ void loop()
   }
 }
 
-void sendSensor()
-{
-  terminal.flush(); //mi assicuro che il terminale non arrivi spezzettato
+void sendSensor() {
   readData();
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
@@ -223,14 +217,11 @@ void sendSensor()
     terminal.println("Movimento Rilevato");
     if (notificationAllowed[EVMOV] == true) {
       notificationAllowed[EVMOV] = false;
+      timer.setTimeout(60000L, enableMovementNotification); //Riattivo le notifiche un minuto dopo averle disattivate
       String notifica = "Rilevato un movimento! Alle ";
       notifica += printTime();
-      //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
     }
-  }
-  else {
-    timer.setTimeout(60000L, enableMovementNotification); //Se non ci sono ulteriori movimenti, a un minuto riabilito le notifiche a un minuto dall'ultma inviata
   }
 }
 
@@ -260,10 +251,6 @@ void setup()
   // seconds, minutes, hours, day of the week, day of the month, month, year
   myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
-  //Sincronizzo gli slider di impostazione limiti sull'app Blynk con i valori di arduino.
-  //!Forse non necessario.!
-  syncWidgets();
-
   String fv = WiFi.firmwareVersion();
   if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
     Serial.print("Please upgrade the firmware. Installed: ");
@@ -287,17 +274,14 @@ void setup()
   timerGoogle = timer.setInterval(logInterval, sendData);
   //Loggo i dati su sd ogni logInterval ms
   timerSD = timer.setInterval(logInterval, logData);
-  //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
-  //timer.setInterval(3000L, debugSystem);
-  //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
-  timer.setInterval(1000L, syncWidgets);
+
   //Informazioni sulla rete ogni minuto
   //timer.setInterval(60000L, printWifiData);
-  //timer.setInterval(60000L, printCurrentNet);
   //Aggiorna i dati sul display
   timer.setInterval(1000L, handleDisplay);
   //Controllo il led che indica connessione wifi
   timer.setInterval(5000L, checkWifi);
+
 }
 
 
@@ -334,19 +318,13 @@ void sendData() {
   }
 
   readData();
-  String string_temperature =  String(temp, 1);
-  string_temperature.replace(".", ",");
-  String string_humidity =  String(hum, DEC);
-  String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + string_temperature + "&humidity=" + string_humidity;
-  Serial.print("requesting URL: ");
-  Serial.println(url);
+  String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum;
 
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
                "User-Agent: BuildFailureDetectorESP8266\r\n" +
                "Connection: close\r\n\r\n");
 
-  Serial.println("request sent");
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
@@ -354,31 +332,17 @@ void sendData() {
       break;
     }
   }
-  /*
-    String line = client.readStringUntil('\n');
-    Serial.println("reply was:");
-    Serial.println("==========");
-    //Serial.println(line);
-    while (client.available()) {
-      char c = client.read();
-      Serial.print(c);
-    }
-    Serial.println("==========");
-    Serial.println("closing connection"); */
 }
 
 //Log dei dati su SD
 void logData() {
-  String string_temperature =  String(temp, 1);
-  string_temperature.replace(".", ",");
-  String string_humidity =  String(hum, DEC);
   String dataString;
   //dataString += printDate(); //Andrà riattivato quando connetterò l'orologio
   dataString += "17/10/2019-21.17.16";
   dataString += " ";
-  dataString += string_temperature;
+  dataString += temp;
   dataString += " ";
-  dataString += string_humidity;
+  dataString += hum;
   dataString += " ";
   dataString += needRecovery;
 
@@ -404,7 +368,6 @@ void logData() {
 */
 void recovery() {
   //ATTENZIONE! QUANDO FACCIO IL RECOVERY DEVO POI RICORDARMI DI PASSARGLI LA DATA ORIGINALE!
-  Serial.println("Entering Recovery...");
   File myFile;
   myFile = SD.open("LOG.TXT");
   if (myFile) {
@@ -435,7 +398,6 @@ void recovery() {
                      "User-Agent: BuildFailureDetectorESP8266\r\n" +
                      "Connection: close\r\n\r\n");
 
-        Serial.println("request sent");
         while (client.available()) {
           char c = client.read();
           Serial.print(c);
@@ -461,13 +423,6 @@ void recovery() {
   }
 }
 
-//Questa sezione sincronizza i valori nell'app con quelli nella memoria di arduino
-void syncWidgets() {
-  Blynk.virtualWrite(V3, tempLimit);
-  Blynk.virtualWrite(V2, humLimit);
-  Blynk.virtualWrite(V0, systemDisabled);
-}
-
 //LEGGO DAL SERVER BLYNK ALCUNI VALORI DI IMPOSTAZIONI NECESSARI PER ARDUINO
 BLYNK_WRITE(V0)  {
   systemDisabled = param.asInt();
@@ -490,49 +445,8 @@ void printWifiData() {
   IPAddress ip = WiFi.localIP();
   Serial.print("IP Address: ");
   Serial.println(ip);
-
-  // print your MAC address:
-  byte mac[6];
-  WiFi.macAddress(mac);
-  Serial.print("MAC address: ");
-  printMacAddress(mac);
 }
 
-void printMacAddress(byte mac[]) {
-  for (int i = 5; i >= 0; i--) {
-    if (mac[i] < 16) {
-      Serial.print("0");
-    }
-    Serial.print(mac[i], HEX);
-    if (i > 0) {
-      Serial.print(":");
-    }
-  }
-  Serial.println();
-}
-
-void printCurrentNet() {
-  // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-
-  // print the MAC address of the router you're attached to:
-  byte bssid[6];
-  WiFi.BSSID(bssid);
-  Serial.print("BSSID: ");
-  printMacAddress(bssid);
-
-  // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.println(rssi);
-
-  // print the encryption type:
-  byte encryption = WiFi.encryptionType();
-  Serial.print("Encryption Type:");
-  Serial.println(encryption, HEX);
-  Serial.println();
-}
 
 String printTime() {
   String orario = "";
@@ -561,6 +475,7 @@ String printDate() {
   return orario;
 }
 
+
 void handleDisplay() {
   lcd.clear();
   String time = "Time ";
@@ -580,34 +495,6 @@ void checkWifi() {
     digitalWrite(WIFILED, LOW);
   } else {
     digitalWrite(WIFILED, HIGH);
-  }
-}
-
-void debugSystem() {
-
-  Serial.print("NeedRecovery?: ");
-  Serial.println(needRecovery);
-  terminal.print("HumLimit:" );
-  terminal.println(humLimit);
-  terminal.print("TempLimit: ");
-  terminal.println(tempLimit);
-  for (int i = 0; i < 3; i++) {
-    if (notificationAllowed[i]) {
-      terminal.print(i);
-      terminal.print(":allowed at ms ");
-    }
-    else {
-      terminal.print(i);
-      terminal.print(":NOT ALLOWED at ms ");
-    }
-    terminal.println(millis());
-    terminal.flush();
-  }
-  if (systemDisabled == 1) {
-    terminal.println("System Disabled");
-  }
-  else {
-    terminal.println("Sistem Enabled");
   }
 }
 
@@ -653,3 +540,33 @@ void deleteSDLog() {
     Serial.println("Failed deleting log file");
   }
 }
+
+/*
+void debugSystem() {
+
+  Serial.print("NeedRecovery?: ");
+  Serial.println(needRecovery);
+  terminal.print("HumLimit:" );
+  terminal.println(humLimit);
+  terminal.print("TempLimit: ");
+  terminal.println(tempLimit);
+  for (int i = 0; i < 3; i++) {
+    if (notificationAllowed[i]) {
+      terminal.print(i);
+      terminal.print(":allowed at ms ");
+    }
+    else {
+      terminal.print(i);
+      terminal.print(":NOT ALLOWED at ms ");
+    }
+    terminal.println(millis());
+    terminal.flush();
+  }
+  if (systemDisabled == 1) {
+    terminal.println("System Disabled");
+  }
+  else {
+    terminal.println("Sistem Enabled");
+  }
+}
+*/
