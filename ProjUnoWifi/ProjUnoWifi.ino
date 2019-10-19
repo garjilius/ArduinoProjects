@@ -41,6 +41,8 @@ int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
+int timerGoogle;
+int timerSD;
 long int logInterval = 600000L;
 byte needRecovery = 0;
 //Token Blynk
@@ -159,6 +161,8 @@ void loop()
             int minInterval = intervalString.toInt();
             Serial.println(minInterval);
             logInterval = 60L * 1000L * intervalString.toInt(); //Forzo il valore a diventare un long
+            timerGoogle = timer.setInterval(logInterval, sendData);
+            timerSD = timer.setInterval(logInterval, logData);
             Serial.print("Intervallo di aggiornamento settato a: ");
             Serial.println(logInterval);
           }
@@ -280,9 +284,9 @@ void setup()
   //Invia i sensori all'app
   timer.setInterval(1000L, sendSensor);
   //Loggo i dati su Google Sheets ogni logInterval ms
-  timer.setInterval(logInterval, sendData);
+  timerGoogle = timer.setInterval(logInterval, sendData);
   //Loggo i dati su sd ogni logInterval ms
-  timer.setInterval(logInterval, logData);
+  timerSD = timer.setInterval(logInterval, logData);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
   //timer.setInterval(3000L, debugSystem);
   //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
