@@ -5,36 +5,44 @@
 #include <virtuabotixRTC.h>
 #include <Wire.h>
 #include <hd44780.h>
-#include <hd44780ioClass/hd44780_I2Cexp.h> 
+#include <hd44780ioClass/hd44780_I2Cexp.h>
 #include <SPI.h>
 #include <SD.h>
 #include <EEPROM.h>
+#include "arduino_secrets.h"
 
+#define BLYNK_PRINT Serial
 #define DHTPIN 2
 #define IRPIN 9
 #define SYSLED 4
 #define WIFILED 3
 
-hd44780_I2Cexp lcd; 
-#define BLYNK_PRINT Serial
-
-int status = WL_IDLE_STATUS;
-WiFiServer server(80);
-String readString;
+hd44780_I2Cexp lcd;
 
 //La posizione degli elementi del'array notifiche relativi ai vari eventi
 #define EVHUM 0
 #define EVTEMP 1
 #define EVMOV 2
-const int chipSelect = 8;
 
+#define DHTTYPE DHT11     // DHT 11
+//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
+
+WiFiSSLClient client;
+WiFiServer server(80);
+
+DHT dht(DHTPIN, DHTTYPE);
+BlynkTimer timer;
+WidgetTerminal terminal(V1);
+
+int status = WL_IDLE_STATUS;
+String readString;
+const int chipSelect = 8;
 int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
 long int logInterval = 600000L;
 byte needRecovery = 0;
-
 //Token Blynk
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
 bool notificationAllowed[3] = {true, true, true};
@@ -45,19 +53,9 @@ virtuabotixRTC myRTC(7, 6, 5); //Configurazione pin orologio
 const char* host = "script.google.com";
 const int httpsPort = 443;
 String GAS_ID = "AKfycbyJgvc9Kg3UzkkN_IDy4rPSexJGnunSMjsVoP5gS6J2tvXId6MM";   // Google App Script id
-WiFiSSLClient client;
-WidgetTerminal terminal(V1);
 
-#define DHTTYPE DHT11     // DHT 11
-//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
-//#define DHTTYPE DHT21   // DHT 21, AM2301
-
-DHT dht(DHTPIN, DHTTYPE);
-BlynkTimer timer;
-
-//char ssid[] = "iChief 6s";
-char ssid[] = "Garjilius";
-char pass[] = "garjiliusnet27";
+char ssid[] = SECRET_SSID;
+char pass[] = SECRET_PASS;
 
 BLYNK_CONNECTED() {
   // Request Blynk server to re-send latest values for all pins
@@ -103,7 +101,7 @@ void loop()
           client.println("<hr />");
           client.println("<H2>Welcome, Emanuele</H2>");
           client.println("<br />");
-          client.println("<img src=\"https://dl.dropbox.com/s/xuidccr2ci1uf3r/project.jpg?dl=0\" alt=\"Circuito\" style=\"width:373px;height:294;\">");
+          client.println("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" alt=\"Circuito\" style=\"width:200px;height:200px;\">");
           client.println("<br />");
           client.println("<br />");
           client.println("<br />");
@@ -113,7 +111,7 @@ void loop()
           client.println("<br />");
           client.println("<br />");
           client.println("<a href=\"/?logNow\"\">Log Now!</a>");    //Salva temperatura e umidità attuali su SD e google spreadsheets
-          client.println("<a href=\"/?\"\">Reload Page</a><br/>");    
+          client.println("<a href=\"/?\"\">Reload Page</a><br/>");
           client.println("<br />");
           client.println("<br />");
           client.println("<form action="">");
@@ -134,7 +132,6 @@ void loop()
           client.println("<b>Recovery:</b> syncs to google sheets data that has been logged when offline");
           client.println("<br />");
           client.println("<br />");
-
           client.println("</BODY>");
           client.println("</HTML>");
 
@@ -190,7 +187,7 @@ void sendSensor()
   //GESTISCO LE NOTIFICHE DEI SENSORI
   if (hum > humLimit) {
     if (notificationAllowed[EVHUM] == true) {
-      notificationAllowed[EVHUM] = false; //Se ho appena lanciato una notifica, non notifico più se prima il valore non era sceso sotto il limite impostato
+      notificationAllowed[EVHUM] = false; //Se ho appena lanciato una notifica, non notifico più se prima il valore non era ri-sceso sotto il limite impostato
       String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
       notifica += hum;
       notifica += "% alle:";
@@ -229,16 +226,20 @@ void sendSensor()
     }
   }
   else {
-    timer.setTimeout(60000L, enableMovementNotification); //attenzione, così facendo la abilita ogni tot secondi indipendentemente dal movimento
+    timer.setTimeout(60000L, enableMovementNotification); //Se non ci sono ulteriori movimenti, a un minuto riabilito le notifiche a un minuto dall'ultma inviata
   }
 }
 
 void setup()
 {
   Serial.begin(9600);
+  pinMode(SYSLED, OUTPUT);
+  pinMode(WIFILED, OUTPUT);
+  dht.begin();
   Blynk.begin(auth, ssid, pass);
   server.begin();   // start the web server on port 80
   terminal.clear(); //Svuoto il terminale blynk
+  //Inizializzo il Display
   lcd.begin(20, 4);
   lcd.setCursor(0, 0);
   lcd.print("Initializing...");
@@ -246,7 +247,7 @@ void setup()
   //Inizializzo la SD
   if (!SD.begin(chipSelect)) {
     Serial.println("SD Card failed, or not present");
-    lcd.print("SDCard Error");
+    lcd.print("SD Card Error");
   } else {
     Serial.println("card initialized.");
     lcd.print("SD Card OK");
@@ -255,11 +256,9 @@ void setup()
   // seconds, minutes, hours, day of the week, day of the month, month, year
   myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
+  //Sincronizzo gli slider di impostazione limiti sull'app Blynk con i valori di arduino.
+  //!Forse non necessario.!
   syncWidgets();
-
-  pinMode(SYSLED, OUTPUT);
-  pinMode(WIFILED, OUTPUT);
-  dht.begin();
 
   String fv = WiFi.firmwareVersion();
   if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
@@ -278,7 +277,7 @@ void setup()
   timer.setTimeout(30000, logData);
   timer.setTimeout(30000, sendData);
 
-  //Invia i sensori all'app 
+  //Invia i sensori all'app
   timer.setInterval(1000L, sendSensor);
   //Loggo i dati su Google Sheets ogni logInterval ms
   timer.setInterval(logInterval, sendData);
@@ -397,8 +396,8 @@ void logData() {
 
 
 /*
- * Questa funzione serve a caricare su Google i dati che sono stati loggati solo su SD per assenza di connessione
- */
+   Questa funzione serve a caricare su Google i dati che sono stati loggati solo su SD per assenza di connessione
+*/
 void recovery() {
   //ATTENZIONE! QUANDO FACCIO IL RECOVERY DEVO POI RICORDARMI DI PASSARGLI LA DATA ORIGINALE!
   Serial.println("Entering Recovery...");
@@ -465,6 +464,7 @@ void syncWidgets() {
   Blynk.virtualWrite(V0, systemDisabled);
 }
 
+//LEGGO DAL SERVER BLYNK ALCUNI VALORI DI IMPOSTAZIONI NECESSARI PER ARDUINO
 BLYNK_WRITE(V0)  {
   systemDisabled = param.asInt();
 }
