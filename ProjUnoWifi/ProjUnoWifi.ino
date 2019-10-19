@@ -5,7 +5,7 @@
 #include <virtuabotixRTC.h>
 #include <Wire.h>
 #include <hd44780.h>
-#include <hd44780ioClass/hd44780_I2Cexp.h> // include i/o class header //
+#include <hd44780ioClass/hd44780_I2Cexp.h> 
 #include <SPI.h>
 #include <SD.h>
 #include <EEPROM.h>
@@ -15,8 +15,7 @@
 #define SYSLED 4
 #define WIFILED 3
 
-hd44780_I2Cexp lcd; // declare lcd object: auto locate & config display for hd44780 chip
-
+hd44780_I2Cexp lcd; 
 #define BLYNK_PRINT Serial
 
 int status = WL_IDLE_STATUS;
@@ -36,12 +35,13 @@ int tempLimit = 25;
 long int logInterval = 600000L;
 byte needRecovery = 0;
 
+//Token Blynk
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5); //Configurazione pin orologio
 
-//Connessione con google spreadsheet
+//Connessione con google sheets
 const char* host = "script.google.com";
 const int httpsPort = 443;
 String GAS_ID = "AKfycbyJgvc9Kg3UzkkN_IDy4rPSexJGnunSMjsVoP5gS6J2tvXId6MM";   // Google App Script id
@@ -80,7 +80,6 @@ void loop()
 
         //Leggo i caratteri da HTTP
         if (readString.length() < 100) {
-          //Inserisco i caratteri nella stringa
           readString += c;
           //Serial.print(c);
         }
@@ -121,7 +120,6 @@ void loop()
           String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
           interval += minInterval;
           interval += ">";
-          //client.println("<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=10>");
           client.println(interval);
           client.println("<input type=\"submit\">");
           client.println("</form>");
@@ -139,7 +137,7 @@ void loop()
 
           delay(1);
           client.stop();
-          //Controlli su Arduino: Se è stato premuto un pulsante sul webserver
+          //Passo i comandi ad Arduino in get, insieme all'URL
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
           }
@@ -236,12 +234,13 @@ void setup()
 {
   Serial.begin(9600);
   Blynk.begin(auth, ssid, pass);
-  server.begin();                           // start the web server on port 80
+  server.begin();   // start the web server on port 80
   terminal.clear(); //Svuoto il terminale blynk
   lcd.begin(20, 4);
   lcd.setCursor(0, 0);
   lcd.print("Initializing...");
   lcd.setCursor(0, 2);
+  //Inizializzo la SD
   if (!SD.begin(chipSelect)) {
     Serial.println("SD Card failed, or not present");
     lcd.print("SDCard Error");
@@ -276,10 +275,12 @@ void setup()
   timer.setTimeout(30000, logData);
   timer.setTimeout(30000, sendData);
 
-  // Ogni secondo invia i sensori all'app
+  //Invia i sensori all'app 
   timer.setInterval(1000L, sendSensor);
-  //Ogni minuto invia i sensori a google
+  //Loggo i dati su Google Sheets ogni logInterval ms
   timer.setInterval(logInterval, sendData);
+  //Loggo i dati su sd ogni logInterval ms
+  timer.setInterval(logInterval, logData);
   //Ogni secondo stampa a terminale quali notifiche sono consentite e quali no
   //timer.setInterval(3000L, debugSystem);
   //Mi assicuro che i widget abbiano gli stessi valori che ha arduino. Forse disabilitabile per risparmiare risorse
@@ -291,10 +292,6 @@ void setup()
   timer.setInterval(1000L, handleDisplay);
   //Controllo il led che indica connessione wifi
   timer.setInterval(5000L, checkWifi);
-  //Loggo i dati su sd ogni tot tempo
-  timer.setInterval(logInterval, logData);
-  //Eseguo il recovery manager periodicamente
-  //timer.setInterval(120000, recoveryManager);
 }
 
 
@@ -312,13 +309,13 @@ void readData() {
   }
 }
 
-// Function for Send data into Google Spreadsheet
-void sendData()
-{
+//Log dei dati su Google Sheets
+void sendData() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("No Connection");
     if (needRecovery != 1) {
       needRecovery = 1;
+      //Scrivo anche sulla memoria permanente se c'è necessità o meno di recovery, in modo da poterlo leggere anche al riavvio di arduino
       EEPROM.write(0, needRecovery);
     }
     return;
@@ -364,12 +361,13 @@ void sendData()
     Serial.println("closing connection"); */
 }
 
+//Log dei dati su SD
 void logData() {
   String string_temperature =  String(temp, 1);
   string_temperature.replace(".", ",");
   String string_humidity =  String(hum, DEC);
   String dataString;
-  //dataString += printDate();
+  //dataString += printDate(); //Andrà riattivato quando connetterò l'orologio
   dataString += "17/10/2019-21.17.16";
   dataString += " ";
   dataString += string_temperature;
@@ -378,8 +376,6 @@ void logData() {
   dataString += " ";
   dataString += needRecovery;
 
-  // open the file. note that only one file can be open at a time,
-  // so you have to close this one before opening another.
   File dataFile = SD.open("log.txt", FILE_WRITE);
 
   // if the file is available, write to it:
@@ -396,8 +392,10 @@ void logData() {
   }
 }
 
-//L'idea di questa funzione è che se c'era stato un errore di connessione ma poi la connessione torna,
-//allora vengono caricati su google i dati che erano mancanti
+
+/*
+ * Questa funzione serve a caricare su Google i dati che sono stati loggati solo su SD per assenza di connessione
+ */
 void recovery() {
   //ATTENZIONE! QUANDO FACCIO IL RECOVERY DEVO POI RICORDARMI DI PASSARGLI LA DATA ORIGINALE!
   Serial.println("Entering Recovery...");
@@ -415,15 +413,7 @@ void recovery() {
       String hum = myFile.readStringUntil(' ');
       String needRecovery = myFile.readStringUntil('\r');
       int toRecover = needRecovery.toInt();
-      /*Serial.print("Date: ");
-        Serial.println(date);
-        Serial.print("Hour: ");
-        Serial.print("Temp: ");
-        Serial.println(temp);
-        Serial.print("Hum: ");
-        Serial.println(hum);
-        Serial.print("ToRecover: ");
-        Serial.println(toRecover);*/
+
       if (toRecover == 1) {
         if (!client.connect(host, httpsPort)) {
           Serial.println("Recovery failed");
@@ -457,6 +447,7 @@ void recovery() {
     deleteSDLog();
     needRecovery = 0;
 
+    //Scrivo anche sulla memoria permanente se c'è necessità o meno di recovery, in modo da poterlo leggere anche al riavvio di arduino
     EEPROM.write(0, needRecovery);
   } else {
     // if the file didn't open, print an error:
@@ -464,7 +455,7 @@ void recovery() {
   }
 }
 
-//Questa sezione mette sincronizza i valori nell'app con quelli nella memoria di arduino
+//Questa sezione sincronizza i valori nell'app con quelli nella memoria di arduino
 void syncWidgets() {
   Blynk.virtualWrite(V3, tempLimit);
   Blynk.virtualWrite(V2, humLimit);
@@ -580,13 +571,10 @@ void handleDisplay() {
 void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
-    //Blynk.begin(auth, ssid, pass); Riconnessione, ma è bloccante: Se non c'è rete si ferma tutto
   } else {
     digitalWrite(WIFILED, HIGH);
   }
 }
-
-
 
 void debugSystem() {
 
@@ -616,6 +604,7 @@ void debugSystem() {
   }
 }
 
+//Controlla la necessità di recovery ed eventualmente avvia il processo
 void recoveryManager() {
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
     recovery();
@@ -625,7 +614,7 @@ void recoveryManager() {
   }
 }
 
-
+//Cancella tutte le righe dal file log su Google Sheets
 void resetSheets() {
   if (!client.connect(host, httpsPort)) {
     Serial.println("Connection failed");
@@ -648,6 +637,7 @@ void resetSheets() {
   }
 }
 
+//Cancella il file di log dalla SD
 void deleteSDLog() {
   bool fileRemoved = SD.remove("LOG.TXT");
   if (fileRemoved) {
