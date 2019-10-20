@@ -240,14 +240,14 @@ void setup()
   lcd.begin(20, 4);
   lcd.setCursor(0, 0);
   lcd.print("Initializing...");
-  lcd.setCursor(0, 2);
   //Inizializzo la SD
+  lcd.setCursor(7, 2);
   if (!SD.begin(chipSelect)) {
     Serial.println("SD Card failed, or not present");
-    lcd.print("SD Card Error");
+    lcd.print("- SD Err");
   } else {
     Serial.println("SD Card initialized.");
-    lcd.print("SD Card OK");
+    lcd.print(" - SD OK");
   }
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
@@ -270,20 +270,16 @@ void setup()
   timer.setTimeout(30000, logData);
   timer.setTimeout(30000, sendData);
 
-  //Invia i sensori all'app
+  //Invia i sensori all'app Blynk
   timer.setInterval(1000L, sendSensor);
   //Loggo i dati su Google Sheets ogni logInterval ms
   timerGoogle = timer.setInterval(logInterval, sendData);
   //Loggo i dati su sd ogni logInterval ms
   timerSD = timer.setInterval(logInterval, logData);
-
-  //Informazioni sulla rete ogni minuto
-  //timer.setInterval(60000L, printWifiData);
   //Aggiorna i dati sul display
-  timer.setInterval(1000L, handleDisplay);
+  timer.setInterval(15000L, handleDisplay);
   //Controllo il led che indica connessione wifi
   timer.setInterval(5000L, checkWifi);
-
 }
 
 
@@ -303,6 +299,7 @@ void readData() {
 
 //Log dei dati su Google Sheets
 void sendData() {
+  lcd.setCursor(4, 3);
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("No Connection");
     if (needRecovery != 1) {
@@ -316,6 +313,11 @@ void sendData() {
   Serial.println(host);
   if (!client.connect(host, httpsPort)) {
     Serial.println("Connection failed");
+    lcd.print("CLOUD ERR");
+    if (needRecovery != 1) {
+      needRecovery = 1;
+      EEPROM.write(0, needRecovery);
+    }
     return;
   }
 
@@ -331,6 +333,7 @@ void sendData() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       Serial.println("Logged to Google Sheets");
+      lcd.print("CLOUD OK");
       break;
     }
   }
@@ -349,7 +352,7 @@ void logData() {
   dataString += needRecovery;
 
   File dataFile = SD.open("log.txt", FILE_WRITE);
-
+  lcd.setCursor(14, 3);
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.println(dataString);
@@ -357,10 +360,12 @@ void logData() {
     // print to the serial port too:
     Serial.print("LoggedToSD: ");
     Serial.println(dataString);
+    lcd.print("SD OK");
   }
   // if the file isn't open, pop up an error:
   else {
     Serial.println("error opening log file");
+    lcd.print("SD ERR");
   }
 }
 
@@ -371,6 +376,7 @@ void logData() {
 void recovery() {
   //ATTENZIONE! QUANDO FACCIO IL RECOVERY DEVO POI RICORDARMI DI PASSARGLI LA DATA ORIGINALE!
   File myFile;
+  lcdClearLine(3);
   myFile = SD.open("LOG.TXT");
   if (myFile) {
     Serial.println("Recovery File Opened");
@@ -388,6 +394,7 @@ void recovery() {
       if (toRecover == 1) {
         if (!client.connect(host, httpsPort)) {
           Serial.println("Recovery failed");
+          lcd.print("Recovery FAILED");
           return;
         }
         Serial.println("Recovering Line...");
@@ -408,6 +415,7 @@ void recovery() {
           String line = client.readStringUntil('\n');
           if (line == "\r") {
             Serial.println("Line recovered");
+            lcd.print("Recovery SUCCESS");
             break;
           }
         }
@@ -422,6 +430,8 @@ void recovery() {
   } else {
     // if the file didn't open, print an error:
     Serial.println("error opening log file");
+    lcd.print("Recovery FAILED");
+
   }
 }
 
@@ -445,7 +455,7 @@ BLYNK_WRITE(V2)  {
 void printWifiData() {
   // print your board's IP address:
   IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
+  Serial.print("IP: ");
   Serial.println(ip);
 }
 
@@ -455,8 +465,8 @@ String printTime() {
   orario += myRTC.hours;
   orario += ":";
   orario += myRTC.minutes;
-  orario += ":";
-  orario += myRTC.seconds;
+  //orario += ":";
+  //orario += myRTC.seconds;
   return orario;
 }
 
@@ -479,24 +489,29 @@ String printDate() {
 
 
 void handleDisplay() {
-  lcd.clear();
-  String time = "Time ";
-  time += printTime();
   lcd.setCursor(0, 0);
-  lcd.print(time);
-  lcd.setCursor(0, 1);
-  lcd.print("H: ");
+  lcd.print(printTime());
+  lcd.print(" H:");
   lcd.print(hum);
-  lcd.print("% T: ");
+  lcd.print("% T:");
   lcd.print(temp);
   lcd.print("C");
+  lcd.setCursor(0, 1);
+  lcd.print("IP: ");
+  lcd.print(WiFi.localIP());
+  lcdClearLine(3);
+  lcd.print("Log:");
+  //Le info su Logging e stato WiFi/SD sono stampate direttamente dalle funzioni che se ne occupano
 }
 
 void checkWifi() {
+  lcd.setCursor(0, 2);
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
+    lcd.print("WiFi ERR");
   } else {
     digitalWrite(WIFILED, HIGH);
+    lcd.print("WiFi OK");
   }
 }
 
@@ -506,14 +521,18 @@ void recoveryManager() {
     recovery();
   }
   else {
+    lcdClearLine(3);
+    lcd.print("NO RECOVERY NEEDED");
     Serial.println("NO CONNECTION OR NO RECOVERY NEEDED!");
   }
 }
 
 //Cancella tutte le righe dal file log su Google Sheets
 void resetSheets() {
+  lcdClearLine(3);
   if (!client.connect(host, httpsPort)) {
     Serial.println("Connection failed");
+    lcd.print("CLOUD RESET OK");
     return;
   }
   String url = "/macros/s/" + GAS_ID + "/exec?reset=1";
@@ -528,6 +547,7 @@ void resetSheets() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       Serial.println("Google Sheets Reset: SUCCESS");
+      lcd.print("CLOUD RESET OK");
       break;
     }
   }
@@ -535,12 +555,22 @@ void resetSheets() {
 
 //Cancella il file di log dalla SD
 void deleteSDLog() {
+  lcdClearLine(3);
   bool fileRemoved = SD.remove("LOG.TXT");
   if (fileRemoved) {
+    lcd.print("SD RESET OK");
     Serial.println("Log/Recovery file succesfully removed");
   } else {
+    lcd.print("SD RESET ERR");
     Serial.println("Failed deleting log file");
   }
+}
+
+//Cancella una riga e riporta il cursore all'inizio di tale riga
+void lcdClearLine(int i) {
+  lcd.setCursor(0, i);
+  lcd.print("                    ");
+  lcd.setCursor(0, i);
 }
 
 /*
