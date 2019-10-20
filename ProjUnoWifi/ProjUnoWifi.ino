@@ -246,7 +246,7 @@ void setup()
     Serial.println("SD Card failed, or not present");
     lcd.print("SD Card Error");
   } else {
-    Serial.println("card initialized.");
+    Serial.println("SD Card initialized.");
     lcd.print("SD Card OK");
   }
   // Set the current date, and time in the following format:
