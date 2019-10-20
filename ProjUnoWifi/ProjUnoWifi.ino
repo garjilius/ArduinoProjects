@@ -158,6 +158,8 @@ void loop()
             int endIndex = readString.indexOf("HTTP") - 1;
             int minInterval = readString.substring(startIndex, endIndex).toInt();
             logInterval = 60L * 1000L * minInterval; //Forzo il valore a diventare un long
+            timer.deleteTimer(timerGoogle);
+            timer.deleteTimer(timerSD);
             timerGoogle = timer.setInterval(logInterval, sendData);
             timerSD = timer.setInterval(logInterval, logData);
             Serial.print("Intervallo di aggiornamento settato a: ");
@@ -338,7 +340,7 @@ void sendData() {
 void logData() {
   String dataString;
   //dataString += printDate(); //Andrà riattivato quando connetterò l'orologio
-  dataString += "17/10/2019-21.17.16";
+  dataString += "19/10/2019-22.10.00";
   dataString += " ";
   dataString += temp;
   dataString += " ";
@@ -542,7 +544,7 @@ void deleteSDLog() {
 }
 
 /*
-void debugSystem() {
+  void debugSystem() {
 
   Serial.print("NeedRecovery?: ");
   Serial.println(needRecovery);
@@ -568,5 +570,5 @@ void debugSystem() {
   else {
     terminal.println("Sistem Enabled");
   }
-}
+  }
 */
