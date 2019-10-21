@@ -85,10 +85,8 @@ void loop()
           //Serial.print(c);
         }
 
-        //Se la richiesta HTTP è andata a buon fine
+        //If HTTP Request is successful
         if (c == '\n') {
-          //Serial.println(readString); //scrivi sul monitor seriale per debugging
-
           client.println("HTTP/1.1 200 OK"); //Invio nuova pagina
           client.println("Content-Type: text/html");
           client.println();
@@ -109,11 +107,11 @@ void loop()
           client.println("<br />");
           client.println("<br />");
           client.println("<a href=\"/?deleteSD\"\">Delete SD Logs</a>");
-          client.println("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>");          //Resetta i log so google sheets
-          client.println("<a href=\"/?recovery\"\">Recovery</a><br/>");    //Link che avvia la modalità recovery
+          client.println("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>");          //Reset Google Sheets log
+          client.println("<a href=\"/?recovery\"\">Recovery</a><br/>");    //Start Recovery
           client.println("<br />");
           client.println("<br />");
-          client.println("<a href=\"/?logNow\"\">Log Now!</a>");    //Salva temperatura e umidità attuali su SD e google spreadsheets
+          client.println("<a href=\"/?logNow\"\">Log Now!</a>");    //Log to both SD and Google Sheets
           client.println("<a href=\"/?\"\">Reload Page</a><br/>");
           client.println("<br />");
           client.println("<br />");
@@ -139,7 +137,6 @@ void loop()
           client.println("</HTML>");
 
           client.stop();
-          //Passo i comandi ad Arduino in get, insieme all'URL
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
           }
@@ -157,12 +154,12 @@ void loop()
             int startIndex = readString.indexOf("=") + 1 ;
             int endIndex = readString.indexOf("HTTP") - 1;
             int minInterval = readString.substring(startIndex, endIndex).toInt();
-            logInterval = 60L * 1000L * minInterval; //Forzo il valore a diventare un long
+            logInterval = 60L * 1000L * minInterval; //Force value to Long 
             timer.deleteTimer(timerGoogle);
             timer.deleteTimer(timerSD);
             timerGoogle = timer.setInterval(logInterval, sendData);
             timerSD = timer.setInterval(logInterval, logData);
-            Serial.print("Intervallo di aggiornamento settato a: ");
+            Serial.print("Log Interval set to: ");
             Serial.println(logInterval);
           }
           readString = "";
@@ -177,37 +174,36 @@ void sendSensor() {
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
 
-  //IL SISTEMA VIENE DISABILITATO MA DOPO AVERE COMUNQUE PRESO TEMP E HUM
+  //Even if system is disabled, it stills sends sensor value to the app to update gauges
   if (systemDisabled == 1) {
     digitalWrite(SYSLED, LOW);
     return; //Se il sistema è disabilitato, non fa nulla
   }
   digitalWrite(SYSLED, HIGH);
 
-  //GESTISCO LE NOTIFICHE DEI SENSORI
+  //Handle sensors' notifications
   if (hum > humLimit) {
     if (notificationAllowed[EVHUM] == true) {
-      notificationAllowed[EVHUM] = false; //Se ho appena lanciato una notifica, non notifico più se prima il valore non era ri-sceso sotto il limite impostato
-      String notifica = "L'umidità ha raggiunto valori troppo elevati: ";
+      notificationAllowed[EVHUM] = false; //Disable notifications...
+      String notifica = "Humidity is too high: ";
       notifica += hum;
-      notifica += "% alle:";
+      notifica += "% - :";
       notifica += printTime();
-      //Blynk.email("Umidità", notifica); //Esempio di email
+      //Blynk.email("Umidità", notifica); //Mail example
       Blynk.notify(notifica);
     }
   }
   else {
-    notificationAllowed[EVHUM] = true; //Riattivo le notifiche se era sceso sotto la soglia
+    notificationAllowed[EVHUM] = true; //Re-enable notifications if humidity went below threshold
   }
 
   if (temp > tempLimit) {
     if (notificationAllowed[EVTEMP] == true) {
       notificationAllowed[EVTEMP] = false; //
-      String notifica = "La temperatura ha raggiunto valori troppo elevati: ";
+      String notifica = "Temperature is too high: ";
       notifica += temp;
-      notifica += " C alle";
+      notifica += " C - ";
       notifica += printTime();
-      //Blynk.email("Temperatura", notifica); //Esempio di email
       Blynk.notify(notifica);
     }
   }
@@ -235,7 +231,7 @@ void setup()
   dht.begin();
   Blynk.begin(auth, ssid, pass);
   server.begin();   // start the web server on port 80
-  terminal.clear(); //Svuoto il terminale blynk
+  terminal.clear(); //Clear blynk terminal
   //Inizializzo il Display
   lcd.begin(20, 4);
   lcd.setCursor(0, 0);
@@ -304,7 +300,7 @@ void sendData() {
     Serial.println("No Connection");
     if (needRecovery != 1) {
       needRecovery = 1;
-      //Scrivo anche sulla memoria permanente se c'è necessità o meno di recovery, in modo da poterlo leggere anche al riavvio di arduino
+      //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
       EEPROM.write(0, needRecovery);
     }
     return;
@@ -371,10 +367,9 @@ void logData() {
 
 
 /*
-   Questa funzione serve a caricare su Google i dati che sono stati loggati solo su SD per assenza di connessione
+   This functions allows me to upload to Google Sheets data that had only been logged to the SD card due to a lack of connection
 */
 void recovery() {
-  //ATTENZIONE! QUANDO FACCIO IL RECOVERY DEVO POI RICORDARMI DI PASSARGLI LA DATA ORIGINALE!
   File myFile;
   lcdClearLine(3);
   myFile = SD.open("LOG.TXT");
@@ -384,7 +379,7 @@ void recovery() {
     // read from the file until there's nothing else in it:
     while (myFile.available()) {
       String date = myFile.readStringUntil(' ');
-      date.replace("\n", ""); //Per qualche motivo sembrano esserci degli a capo
+      date.replace("\n", ""); //Removes newlines
       date.replace("\r", "");
       String temp = myFile.readStringUntil(' ');
       String hum = myFile.readStringUntil(' ');
@@ -425,7 +420,7 @@ void recovery() {
     deleteSDLog();
     needRecovery = 0;
 
-    //Scrivo anche sulla memoria permanente se c'è necessità o meno di recovery, in modo da poterlo leggere anche al riavvio di arduino
+      //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
     EEPROM.write(0, needRecovery);
   } else {
     // if the file didn't open, print an error:
@@ -435,7 +430,7 @@ void recovery() {
   }
 }
 
-//LEGGO DAL SERVER BLYNK ALCUNI VALORI DI IMPOSTAZIONI NECESSARI PER ARDUINO
+//Read from Blynk's server values to be re-synced to arduino when rebooted
 BLYNK_WRITE(V0)  {
   systemDisabled = param.asInt();
 }
@@ -501,7 +496,6 @@ void handleDisplay() {
   lcd.print(WiFi.localIP());
   lcdClearLine(3);
   lcd.print("Log:");
-  //Le info su Logging e stato WiFi/SD sono stampate direttamente dalle funzioni che se ne occupano
 }
 
 void checkWifi() {
@@ -515,7 +509,7 @@ void checkWifi() {
   }
 }
 
-//Controlla la necessità di recovery ed eventualmente avvia il processo
+//Check if log lines need to be synced from the SD card to google sheets
 void recoveryManager() {
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
     recovery();
@@ -527,7 +521,7 @@ void recoveryManager() {
   }
 }
 
-//Cancella tutte le righe dal file log su Google Sheets
+//Delete all lines in Google Sheets Log
 void resetSheets() {
   lcdClearLine(3);
   if (!client.connect(host, httpsPort)) {
@@ -553,7 +547,7 @@ void resetSheets() {
   }
 }
 
-//Cancella il file di log dalla SD
+//Delete all lines in SD Log
 void deleteSDLog() {
   lcdClearLine(3);
   bool fileRemoved = SD.remove("LOG.TXT");
@@ -566,7 +560,7 @@ void deleteSDLog() {
   }
 }
 
-//Cancella una riga e riporta il cursore all'inizio di tale riga
+//Clears line 'i' and moves the cursor back to the start of that line
 void lcdClearLine(int i) {
   lcd.setCursor(0, i);
   lcd.print("                    ");
