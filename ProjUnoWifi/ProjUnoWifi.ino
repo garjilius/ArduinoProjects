@@ -10,7 +10,6 @@
 #include <EEPROM.h>
 #include "arduino_secrets.h"
 
-
 //#define BLYNK_PRINT Serial
 #define DHTPIN 2
 #define IRPIN 9
@@ -19,7 +18,7 @@
 
 hd44780_I2Cexp lcd;
 
-//La posizione degli elementi del'array notifiche relativi ai vari eventi
+//Used to identify the events in the notification array
 #define EVHUM 0
 #define EVTEMP 1
 #define EVMOV 2
@@ -49,9 +48,9 @@ byte needRecovery = 0;
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
-virtuabotixRTC myRTC(7, 6, 5); //Configurazione pin orologio
+virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
-//Connessione con google sheets
+//Google Sheets connection data
 const char* host = "script.google.com";
 const int httpsPort = 443;
 
@@ -79,7 +78,7 @@ void loop()
       if (client.available()) {
         char c = client.read();
 
-        //Leggo i caratteri da HTTP
+        //Read HTTP Characters
         if (readString.length() < 100) {
           readString += c;
           //Serial.print(c);
@@ -87,7 +86,7 @@ void loop()
 
         //If HTTP Request is successful
         if (c == '\n') {
-          client.println("HTTP/1.1 200 OK"); //Invio nuova pagina
+          client.println("HTTP/1.1 200 OK"); 
           client.println("Content-Type: text/html");
           client.println();
           client.println("<HTML>");
@@ -177,7 +176,7 @@ void sendSensor() {
   //Even if system is disabled, it stills sends sensor value to the app to update gauges
   if (systemDisabled == 1) {
     digitalWrite(SYSLED, LOW);
-    return; //Se il sistema è disabilitato, non fa nulla
+    return; 
   }
   digitalWrite(SYSLED, HIGH);
 
@@ -212,11 +211,11 @@ void sendSensor() {
   }
 
   if (digitalRead(IRPIN) == HIGH) {
-    terminal.println("Movimento Rilevato");
+    terminal.println("Movement detected");
     if (notificationAllowed[EVMOV] == true) {
       notificationAllowed[EVMOV] = false;
-      timer.setTimeout(60000L, enableMovementNotification); //Riattivo le notifiche un minuto dopo averle disattivate
-      String notifica = "Rilevato un movimento! Alle ";
+      timer.setTimeout(60000L, enableMovementNotification); //Re-Enables movement notification after one minute
+      String notifica = "Movement Detected - ";
       notifica += printTime();
       Blynk.notify(notifica);
     }
@@ -262,28 +261,25 @@ void setup()
 
   printWifiData();
 
-  //Il primo logging fiene fatto a 30s dall'avvio, indipendentemente dal log Interval
+  //First logging happens 30s after boot, regardless of logging interval settings
   timer.setTimeout(30000, logData);
   timer.setTimeout(30000, sendData);
 
-  //Invia i sensori all'app Blynk
+  //Sets run frequency for used functions
   timer.setInterval(1000L, sendSensor);
-  //Loggo i dati su Google Sheets ogni logInterval ms
   timerGoogle = timer.setInterval(logInterval, sendData);
-  //Loggo i dati su sd ogni logInterval ms
   timerSD = timer.setInterval(logInterval, logData);
-  //Aggiorna i dati sul display
   timer.setInterval(15000L, handleDisplay);
-  //Controllo il led che indica connessione wifi
   timer.setInterval(5000L, checkWifi);
 }
 
 
-//Per il movimento è necessario usare timer per resettare le notifiche
+//Re Enables movement notifications
 void enableMovementNotification() {
   notificationAllowed[EVMOV] = true;
 }
 
+//Reads data from DHT sensor
 void readData() {
   hum = dht.readHumidity();
   temp = dht.readTemperature();
@@ -293,7 +289,7 @@ void readData() {
   }
 }
 
-//Log dei dati su Google Sheets
+//Logs data do Google Sheets
 void sendData() {
   lcd.setCursor(4, 3);
   if (WiFi.status() != WL_CONNECTED) {
@@ -335,7 +331,7 @@ void sendData() {
   }
 }
 
-//Log dei dati su SD
+//Logs data to SD
 void logData() {
   String dataString;
   //dataString += printDate(); //Andrà riattivato quando connetterò l'orologio
