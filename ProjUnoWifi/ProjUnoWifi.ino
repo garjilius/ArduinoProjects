@@ -111,21 +111,16 @@ void loop()
           client.println("<H2>Welcome, Emanuele</H2>");
           client.println("<br />");
           client.println("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" alt=\"Circuito\" style=\"width:200px;height:200px;\">");
-          client.println("<br />");
-          client.println("<br />");
-          client.println("<br />");
+          client.println("<br /> <br /> <br />");
           client.println("<a href=\"/?deleteSD\"\">Delete SD Logs</a>");
           client.println("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>");          //Reset Google Sheets log
           client.println("<a href=\"/?recovery\"\">Recovery</a><br/>");    //Start Recovery
-          client.println("<br />");
-          client.println("<br />");
+          client.println("<br /> <br />");
           client.println("<a href=\"/?logNow\"\">Log Now!</a>"); //Log to both SD and Google Sheets
           client.println("<a href=\"/?sendReport\"\">Send Report!</a>"); //Log to both SD and Google Sheets
-          client.println("<br />");
-          client.println("<br />");
+          client.println("<br /> <br /> <br />");
           client.println("<a href=\"/?\"\">Reload Page</a><br/>");
-          client.println("<br />");
-          client.println("<br />");
+          client.println("<br /> <br />");
           client.println("<form action="">");
           client.println("Frequenza Logging (minuti)");
           int minInterval = logInterval / 60;
