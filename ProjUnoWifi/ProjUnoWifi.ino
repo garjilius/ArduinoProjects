@@ -229,6 +229,7 @@ void sendSensor() {
     if (notificationAllowed[EVMOV] == true) {
       notificationAllowed[EVMOV] = false;
       timer.setTimeout(60000L, enableMovementNotification); //Re-Enables movement notification after one minute
+      numMov++;
       String notifica = "Movement Detected - ";
       notifica += printTime();
       Blynk.notify(notifica);
