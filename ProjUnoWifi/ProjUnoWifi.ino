@@ -53,8 +53,8 @@ virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
 //Saving info used for recap email
 //Position 0: Min - position 1: Max
-int humStat[2] = {0, 0};
-float tempStat[2] = {0, 0};
+int humStat[2] = {100, -100};
+float tempStat[2] = {100, -100};
 int numMov = 0;
 int currentDay = 0;
 
@@ -606,10 +606,10 @@ void manageStats(float temp, int hum) {
 
 //Resets all stats
 void resetStats() {
-  tempStat[0] = 0;
-  tempStat[1] = 1;
-  humStat[0] = 0;
-  humStat[1] = 1;
+  tempStat[0] = 100;
+  tempStat[1] = -100;
+  humStat[0] = 100;
+  humStat[1] = -100;
   numMov = 0;
 }
 
