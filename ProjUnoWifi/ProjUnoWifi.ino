@@ -28,6 +28,7 @@ hd44780_I2Cexp lcd;
 
 WiFiSSLClient client;
 WiFiServer server(80);
+File webFile;
 
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
@@ -95,55 +96,27 @@ void loop()
 
         //If HTTP Request is successful
         if (c == '\n') {
-          client.println("HTTP/1.1 200 OK");
-          client.println("Content-Type: text/html");
-          client.println();
-          client.println("<HTML>");
-          client.println("<HEAD>");
-          client.println("<meta name='apple-mobile-web-app-capable' content='yes' />");
-          client.println("<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />");
-          client.println("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0' />");
-          client.println("<TITLE>Arduino Control Panel</TITLE>");
-          client.println("</HEAD>");
-          client.println("<BODY>");
-          client.println("<H1>Arduino Control Panel</H1>");
-          client.println("<hr />");
-          client.println("<H2>Welcome, Emanuele</H2>");
-          client.println("<br />");
-          client.println("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" alt=\"Circuito\" style=\"width:200px;height:200px;\">");
-          client.println("<br /> <br /> <br />");
-          client.println("<a href=\"/?deleteSD\"\">Delete SD Logs</a>");
-          client.println("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>");          //Reset Google Sheets log
-          client.println("<a href=\"/?recovery\"\">Recovery</a><br/>");    //Start Recovery
-          client.println("<br /> <br />");
-          client.println("<a href=\"/?logNow\"\">Log Now!</a>"); //Log to both SD and Google Sheets
-          client.println("<a href=\"/?sendReport\"\">Send Report!</a>"); //Log to both SD and Google Sheets
-          client.println("<br /> <br /> <br />");
-          client.println("<a href=\"/?\"\">Reload Page</a><br/>");
-          client.println("<br /> <br />");
-          client.println("<form action="">");
-          client.println("Frequenza Logging (minuti)");
-          int minInterval = logInterval / 60;
-          minInterval = minInterval / 1000;
-          String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
-          interval += minInterval;
-          interval += ">";
-          client.println(interval);
-          client.println("<input type=\"submit\">");
-          client.println("</form>");
-          client.println("<br />");
-          client.println("<b>Delete SD Logs:</b> deletes the log file from the SD Card");
-          client.println("<br />");
-          client.println("<b>Delete Google Sheets Logs:</b> deletes the log from Google Sheets");
-          client.println("<br />");
-          client.println("<b>Recovery:</b> syncs to google sheets data that has been logged when offline");
-          client.println("<br />");
-          client.println("<b>Log Now:</b> Logs last sensor data to Google Sheets and microSD Card");
-          client.println("<br />");
-          client.println("<b>Send Report:</b> Sends via mail the minimum and maximum values for temperature and humidity of the current day");
-          client.println("<br /> <br />");
-          client.println("</BODY>");
-          client.println("</HTML>");
+         webFile = SD.open("index.html");        // open requested file
+          if (webFile) {
+            // send a standard http response header
+            client.println(F("HTTP/1.1 200 OK"));
+            client.println(F("Content-Type: text/html"));
+            client.println(F("Connection: close"));
+            client.println();
+            // send web page
+            while (webFile.available()) {
+              int num_bytes_read;
+              char byte_buffer[64];
+              // get bytes from requested file
+              num_bytes_read = webFile.read(byte_buffer, 64);
+              // send the file bytes to the client
+              client.write(byte_buffer, num_bytes_read);
+            }
+            webFile.close();
+          }
+          else {
+            Serial.println(F("Web file error"));
+          }
 
           client.stop();
           if (readString.indexOf("?recovery") > 0) {
@@ -160,7 +133,7 @@ void loop()
             deleteSDLog();
           }
           if (readString.indexOf("?sendReport") > 0) {
-            Serial.println("Send report...");
+            Serial.println(F("Send report..."));
             sendReport();
           }
           if (readString.indexOf("?logInterval") > 0) {
@@ -172,8 +145,8 @@ void loop()
             timer.deleteTimer(timerSD);
             timerGoogle = timer.setInterval(logInterval, sendData);
             timerSD = timer.setInterval(logInterval, logData);
-            Serial.print("Log Interval set to: ");
-            Serial.println(logInterval);
+            Serial.print(F("Log Interval set to: "));
+            //Serial.println(logInterval);
           }
           readString = "";
         }
@@ -225,7 +198,6 @@ void sendSensor() {
   }
 
   if (digitalRead(IRPIN) == HIGH) {
-    terminal.println("Movement detected");
     if (notificationAllowed[EVMOV] == true) {
       notificationAllowed[EVMOV] = false;
       timer.setTimeout(60000L, enableMovementNotification); //Re-Enables movement notification after one minute
@@ -250,29 +222,30 @@ void setup()
   //Inizializzo il Display
   lcd.begin(20, 4);
   lcd.setCursor(0, 0);
-  lcd.print("Initializing...");
   //Inizializzo la SD
   lcd.setCursor(7, 2);
   if (!SD.begin(chipSelect)) {
-    Serial.println("SD Card failed, or not present");
-    lcd.print("- SD Err");
+    Serial.println(F("SD Card failed, or not present"));
+    lcd.print(F("- SD Err"));
   } else {
-    Serial.println("SD Card initialized.");
-    lcd.print(" - SD OK");
+    Serial.println(F("SD Card initialized."));
+    lcd.print(F(" - SD OK"));
   }
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
   myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
-  String fv = WiFi.firmwareVersion();
-  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-    Serial.print("Please upgrade the firmware. Installed: ");
-    Serial.println(fv);
-  }
+  
+    String fv = WiFi.firmwareVersion();
+    if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
+      Serial.print(F("Please upgrade the firmware. Installed: "));
+      Serial.println(fv);
+    }
+  
 
   EEPROM.get(0, needRecovery);
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
-    Serial.println("Lines need recovery, Network Available");
+    Serial.println(F("Need recovery, Network Available"));
   }
 
   printWifiData();
@@ -301,7 +274,7 @@ void readData() {
   hum = dht.readHumidity();
   temp = dht.readTemperature();
   if (isnan(hum) || isnan(temp)) {
-    Serial.println("Failed to read from DHT sensor!");
+    Serial.println(F("DHT Read Fail"));
     return;
   }
   manageStats(temp, hum);
@@ -311,7 +284,7 @@ void readData() {
 void sendData() {
   lcd.setCursor(4, 3);
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("No Connection");
+    Serial.println(F("No Connection"));
     if (needRecovery != 1) {
       needRecovery = 1;
       //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
@@ -319,11 +292,11 @@ void sendData() {
     }
     return;
   }
-  Serial.print("connecting to ");
+  Serial.print(F("connecting to "));
   Serial.println(host);
   if (!client.connect(host, httpsPort)) {
-    Serial.println("Connection failed");
-    lcd.print("CLOUD ERR");
+    Serial.println(F("Connection failed"));
+    lcd.print(F("CLOUD ERR"));
     if (needRecovery != 1) {
       needRecovery = 1;
       EEPROM.write(0, needRecovery);
@@ -342,8 +315,8 @@ void sendData() {
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
-      Serial.println("Logged to Google Sheets");
-      lcd.print("CLOUD OK");
+      Serial.println(F("Logged to Google Sheets"));
+      lcd.print(F("CLOUD OK"));
       break;
     }
   }
@@ -368,14 +341,14 @@ void logData() {
     dataFile.println(dataString);
     dataFile.close();
     // print to the serial port too:
-    Serial.print("LoggedToSD: ");
+    Serial.print(F("LoggedToSD: "));
     Serial.println(dataString);
     lcd.print("SD OK");
   }
   // if the file isn't open, pop up an error:
   else {
-    Serial.println("error opening log file");
-    lcd.print("SD ERR");
+    Serial.println(F("error opening log file"));
+    lcd.print(F("SD ERR"));
   }
 }
 
@@ -388,7 +361,6 @@ void recovery() {
   lcdClearLine(3);
   myFile = SD.open("LOG.TXT");
   if (myFile) {
-    Serial.println("Recovery File Opened");
 
     // read from the file until there's nothing else in it:
     while (myFile.available()) {
@@ -402,13 +374,13 @@ void recovery() {
 
       if (toRecover == 1) {
         if (!client.connect(host, httpsPort)) {
-          Serial.println("Recovery failed");
-          lcd.print("Recovery FAILED");
+          Serial.println(F("Recovery failed"));
+          lcd.print(F("Recovery FAILED"));
           return;
         }
-        Serial.println("Recovering Line...");
+        Serial.println(F("Recovering Line..."));
         String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum + "&date=" + date;
-        Serial.print("requesting URL: ");
+        Serial.print(F("requesting URL: "));
         Serial.println(url);
 
         client.print(String("GET ") + url + " HTTP/1.1\r\n" +
@@ -423,8 +395,8 @@ void recovery() {
         while (client.connected()) {
           String line = client.readStringUntil('\n');
           if (line == "\r") {
-            Serial.println("Line recovered");
-            lcd.print("Recovery SUCCESS");
+            Serial.println(F("Line recovered"));
+            lcd.print(F("Recovery SUCCESS"));
             break;
           }
         }
@@ -438,8 +410,8 @@ void recovery() {
     EEPROM.write(0, needRecovery);
   } else {
     // if the file didn't open, print an error:
-    Serial.println("error opening log file");
-    lcd.print("Recovery FAILED");
+    Serial.println(F("error opening log file"));
+    lcd.print(F("Recovery FAILED"));
 
   }
 }
@@ -451,20 +423,16 @@ BLYNK_WRITE(V0)  {
 
 BLYNK_WRITE(V3)  {
   tempLimit = param.asFloat();
-  terminal.print("Temp Limit: ");
-  terminal.println(tempLimit);
 }
 
 BLYNK_WRITE(V2)  {
   humLimit = param.asFloat();
-  terminal.print("Hum Limit: ");
-  terminal.println(humLimit);
 }
 
 void printWifiData() {
   // print your board's IP address:
   IPAddress ip = WiFi.localIP();
-  Serial.print("IP: ");
+  Serial.print(F("IP: "));
   Serial.println(ip);
 }
 
@@ -506,20 +474,20 @@ void handleDisplay() {
   lcd.print(temp);
   lcd.print("C");
   lcd.setCursor(0, 1);
-  lcd.print("IP: ");
+  lcd.print(F("IP: "));
   lcd.print(WiFi.localIP());
   lcdClearLine(3);
-  lcd.print("Log:");
+  lcd.print(F("Log:"));
 }
 
 void checkWifi() {
   lcd.setCursor(0, 2);
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
-    lcd.print("WiFi ERR");
+    lcd.print(F("WiFi ERR"));
   } else {
     digitalWrite(WIFILED, HIGH);
-    lcd.print("WiFi OK");
+    lcd.print(F("WiFi OK"));
   }
 }
 
@@ -530,8 +498,7 @@ void recoveryManager() {
   }
   else {
     lcdClearLine(3);
-    lcd.print("NO RECOVERY NEEDED");
-    Serial.println("NO CONNECTION OR NO RECOVERY NEEDED!");
+    lcd.print(F("NO RECOVERY NEEDED"));
   }
 }
 
@@ -539,8 +506,8 @@ void recoveryManager() {
 void resetSheets() {
   lcdClearLine(3);
   if (!client.connect(host, httpsPort)) {
-    Serial.println("Connection failed");
-    lcd.print("CLOUD RESET OK");
+    Serial.println(F("Connection failed"));
+    lcd.print(F("CLOUD RESET OK"));
     return;
   }
   String url = "/macros/s/" + GAS_ID + "/exec?reset=1";
@@ -550,12 +517,12 @@ void resetSheets() {
                "User-Agent: BuildFailureDetectorESP8266\r\n" +
                "Connection: close\r\n\r\n");
 
-  Serial.println("Reset request sent");
+  Serial.println(F("Reset request sent"));
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
-      Serial.println("Google Sheets Reset: SUCCESS");
-      lcd.print("CLOUD RESET OK");
+      Serial.println(F("Google Sheets Reset: SUCCESS"));
+      lcd.print(F("CLOUD RESET OK"));
       break;
     }
   }
@@ -566,11 +533,11 @@ void deleteSDLog() {
   lcdClearLine(3);
   bool fileRemoved = SD.remove("LOG.TXT");
   if (fileRemoved) {
-    lcd.print("SD RESET OK");
-    Serial.println("Log/Recovery file succesfully removed");
+    lcd.print(F("SD RESET OK"));
+    Serial.println(F("File succesfully removed"));
   } else {
-    lcd.print("SD RESET ERR");
-    Serial.println("Failed deleting log file");
+    lcd.print(F("SD RESET ERR"));
+    Serial.println(F("Failed deleting log file"));
   }
 }
 
@@ -606,10 +573,10 @@ void manageStats(float temp, int hum) {
 
 //Resets all stats
 void resetStats() {
-  tempStat[0] = 100;
-  tempStat[1] = -100;
-  humStat[0] = 100;
-  humStat[1] = -100;
+  tempStat[0] = temp;
+  tempStat[1] = temp;
+  humStat[0] = hum;
+  humStat[1] = hum;
   numMov = 0;
 }
 
@@ -625,18 +592,18 @@ bool dateChanged() {
 
 //Sends the report mail using Blynk. Body+Subject+emailaddress must be <140 Char
 void sendReport() {
-  String report = "Min Temp: ";
+  String report = "Min-Max Temp: ";
   report += tempStat[0];
-  report += "C - Max Temp: ";
+  report += "C - ";
   report += tempStat[1];
-  report += "C Min Hum: ";
+  report += "C | Min-Max Hum: ";
   report += humStat[0];
-  report += " % - Max Hum: ";
+  report += " % - ";
   report += humStat[1];
-  report += "% - Num of movements: ";
+  report += "% - #Movements: ";
   report += numMov;
   //After sending the email, stats get reset
-  Blynk.email("Daily report", report);
+  Blynk.email(F("Daily report"), report);
   resetStats();
 }
 
@@ -647,33 +614,3 @@ void handleReports() {
   if (dateChanged())
     sendReport();
 }
-
-/*
-  void debugSystem() {
-
-  Serial.print("NeedRecovery?: ");
-  Serial.println(needRecovery);
-  terminal.print("HumLimit:" );
-  terminal.println(humLimit);
-  terminal.print("TempLimit: ");
-  terminal.println(tempLimit);
-  for (int i = 0; i < 3; i++) {
-    if (notificationAllowed[i]) {
-      terminal.print(i);
-      terminal.print(":allowed at ms ");
-    }
-    else {
-      terminal.print(i);
-      terminal.print(":NOT ALLOWED at ms ");
-    }
-    terminal.println(millis());
-    terminal.flush();
-  }
-  if (systemDisabled == 1) {
-    terminal.println("System Disabled");
-  }
-  else {
-    terminal.println("Sistem Enabled");
-  }
-  }
-*/
