@@ -53,8 +53,8 @@ virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
 //Saving info used for recap email
 //Position 0: Min - position 1: Max
-int humStat[2] = {100, -100};
-float tempStat[2] = {100, -100};
+int humStat[2] = {0, 0};
+float tempStat[2] = {0, 0};
 int numMov = 0;
 int currentDay = 0;
 
