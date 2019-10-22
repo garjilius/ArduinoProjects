@@ -138,7 +138,10 @@ void loop()
           client.println("<br />");
           client.println("<b>Recovery:</b> syncs to google sheets data that has been logged when offline");
           client.println("<br />");
+          client.println("<b>Log Now:</b> Logs last sensor data to Google Sheets and microSD Card");
           client.println("<br />");
+          client.println("<b>Send Report:</b> Sends via mail the minimum and maximum values for temperature and humidity of the current day");
+          client.println("<br /> <br />");
           client.println("</BODY>");
           client.println("</HTML>");
 
@@ -157,6 +160,7 @@ void loop()
             deleteSDLog();
           }
           if (readString.indexOf("?sendReport") > 0) {
+            Serial.println("Send report...");
             sendReport();
           }
           if (readString.indexOf("?logInterval") > 0) {
@@ -592,10 +596,10 @@ void manageStats(float temp, int hum) {
     tempStat[1] = temp;
   }
   if (hum < humStat[0]) {
-    tempStat[0] = temp;
+    humStat[0] = hum;
   }
   if (hum > humStat[1]) {
-    tempStat[1] = temp;
+    humStat[1] = hum;
   }
 }
 
@@ -618,21 +622,20 @@ bool dateChanged() {
   return false;
 }
 
-//Sends the report mail using Blynk
+//Sends the report mail using Blynk. Body+Subject+emailaddress must be <140 Char
 void sendReport() {
-  String report = "Min temp of the day: ";
+  String report = "Min Temp: ";
   report += tempStat[0];
-  report += " C, max temp of the day: ";
+  report += "C - Max Temp: ";
   report += tempStat[1];
-  report += "C \n min hum of the day: ";
+  report += "C Min Hum: ";
   report += humStat[0];
-  report += " %, max hum of the day: ";
+  report += " % - Max Hum: ";
   report += humStat[1];
-  report += "% \n Number of movements detected: ";
+  report += "% - Num of movements: ";
   report += numMov;
-
   //After sending the email, stats get reset
-  Blynk.email(MY_EMAIL, "Your daily report", report);
+  Blynk.email("Daily report", report);
   resetStats();
 }
 
