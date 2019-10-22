@@ -52,11 +52,12 @@ virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
 
 //Saving info used for recap email
-//Position 0: Min - position 1: Max
-int humStat[2] = {100, -100};
-float tempStat[2] = {100, -100};
+//Position 0: Min - 1: Max - 2: AVG
+int humStat[3] = {100, -100, 1};
+float tempStat[3] = {100, -100, 1};
 int numMov = 0;
 int currentDay = 0;
+unsigned int readsCount = 0;
 
 
 //Google Sheets connection data
@@ -100,8 +101,6 @@ void loop()
           client.println();
           client.println("<HTML>");
           client.println("<HEAD>");
-          client.println("<meta name='apple-mobile-web-app-capable' content='yes' />");
-          client.println("<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />");
           client.println("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0' />");
           client.println("<TITLE>Arduino Control Panel</TITLE>");
           client.println("</HEAD>");
@@ -282,7 +281,7 @@ void setup()
   timer.setTimeout(30000, sendData);
 
   //Sets run frequency for used functions
-  timer.setInterval(1000L, sendSensor);
+  timer.setInterval(2000L, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
   timerSD = timer.setInterval(logInterval, logData);
   timer.setInterval(15000L, handleDisplay);
@@ -305,6 +304,7 @@ void readData() {
     return;
   }
   manageStats(temp, hum);
+  readsCount++;
 }
 
 //Logs data do Google Sheets
@@ -588,7 +588,7 @@ void lcdClearLine(int i) {
 */
 
 
-//Keeps min and max temperature updated
+//Keeps min,max, temperature/humidity updated
 void manageStats(float temp, int hum) {
   if (temp < tempStat[0]) {
     tempStat[0] = temp;
@@ -602,15 +602,18 @@ void manageStats(float temp, int hum) {
   if (hum > humStat[1]) {
     humStat[1] = hum;
   }
+  tempStat[2] = ((tempStat[2] * readsCount - 1) + temp) / readsCount;
+  humStat[2] = ((humStat[2] * readsCount - 1) + hum) / readsCount;
 }
 
 //Resets all stats
 void resetStats() {
-  tempStat[0] = 0;
-  tempStat[1] = 1;
-  humStat[0] = 0;
-  humStat[1] = 1;
+  tempStat[0] = 100;
+  tempStat[1] = -100;
+  humStat[0] = 100;
+  humStat[1] = -100;
   numMov = 0;
+  readsCount = 0;
 }
 
 //If the date has changed, returns true and uptates currentDay
@@ -625,19 +628,24 @@ bool dateChanged() {
 
 //Sends the report mail using Blynk. Body+Subject+emailaddress must be <140 Char
 void sendReport() {
-  String report = "Min Temp: ";
+  
+  String report = "Temp: ";
   report += tempStat[0];
-  report += "C - Max Temp: ";
+  report += "to ";
   report += tempStat[1];
-  report += "C Min Hum: ";
+  report += "C AVG:";
+  report += tempStat[2];
+  report += "C - humidity";
   report += humStat[0];
-  report += " % - Max Hum: ";
+  report += " to ";
   report += humStat[1];
-  report += "% - Num of movements: ";
+  report += "% AVG ";
+  report += humStat[2];
+  report += "% - Movements Detected: ";
   report += numMov;
   //After sending the email, stats get reset
   Blynk.email("Daily report", report);
-  resetStats();
+  resetStats(); 
 }
 
 /*checks if the data has changed and if it has, sends a report.
