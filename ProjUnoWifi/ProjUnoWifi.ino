@@ -659,8 +659,12 @@ void handleReports() {
    and when we are far from its LCD display
 */
 void debugSystem() {
+  terminal.println(F("------"));
+  terminal.println(printTime());
   terminal.print(F("Free Memory: "));
   terminal.println(freeMemory());
-  terminal.print("SD OK: ");
+  terminal.print(F("SD OK: "));
   terminal.println(sdOK);
+  terminal.print(F("Need Recovery: "));
+  terminal.println(needRecovery);
 }
