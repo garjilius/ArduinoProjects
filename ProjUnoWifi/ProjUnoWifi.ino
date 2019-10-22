@@ -381,6 +381,7 @@ void logData() {
   else {
     Serial.println(F("error opening log file"));
     lcd.print(F("SD ERR"));
+    sdOK = false;
   }
 }
 
@@ -444,6 +445,7 @@ void recovery() {
     // if the file didn't open, print an error:
     Serial.println(F("error opening log file"));
     lcd.print(F("Recovery FAILED"));
+    sdOK = false;
 
   }
 }
@@ -570,6 +572,7 @@ void deleteSDLog() {
   } else {
     lcd.print(F("SD RESET ERR"));
     Serial.println(F("Failed deleting log file"));
+    sdOK = false;
   }
 }
 
