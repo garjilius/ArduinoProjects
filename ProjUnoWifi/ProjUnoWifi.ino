@@ -119,7 +119,10 @@ void loop()
           client.println("<a href=\"/?recovery\"\">Recovery</a><br/>");    //Start Recovery
           client.println("<br />");
           client.println("<br />");
-          client.println("<a href=\"/?logNow\"\">Log Now!</a>");    //Log to both SD and Google Sheets
+          client.println("<a href=\"/?logNow\"\">Log Now!</a>"); //Log to both SD and Google Sheets
+          client.println("<a href=\"/?sendReport\"\">Send Report!</a>"); //Log to both SD and Google Sheets
+          client.println("<br />");
+          client.println("<br />");
           client.println("<a href=\"/?\"\">Reload Page</a><br/>");
           client.println("<br />");
           client.println("<br />");
@@ -157,6 +160,9 @@ void loop()
           }
           if (readString.indexOf("?deleteSD") > 0) {
             deleteSDLog();
+          }
+          if (readString.indexOf("?sendReport") > 0) {
+            sendReport();
           }
           if (readString.indexOf("?logInterval") > 0) {
             int startIndex = readString.indexOf("=") + 1 ;
@@ -576,10 +582,10 @@ void lcdClearLine(int i) {
 }
 
 /*
- * Functions to manage stats and send reports have been split into separate functions to allow more flexibility:
- * For example, you can send a mail recap if the date has changed (= on a new day), but you can also send a recap
- * explicitly requesting it via control panel and so on
- */
+   Functions to manage stats and send reports have been split into separate functions to allow more flexibility:
+   For example, you can send a mail recap if the date has changed (= on a new day), but you can also send a recap
+   explicitly requesting it via control panel and so on
+*/
 
 
 //Keeps min and max temperature updated
@@ -636,7 +642,7 @@ void sendReport() {
 }
 
 /*checks if the data has changed and if it has, sends a report.
-It's handy having a separate function to do it because it can be called repeatedly in a timer
+  It's handy having a separate function to do it because it can be called repeatedly in a timer
 */
 void handleReports() {
   if (dateChanged())
