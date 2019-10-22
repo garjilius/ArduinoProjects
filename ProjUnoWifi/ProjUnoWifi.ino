@@ -639,7 +639,7 @@ void sendReport() {
   report += humStat[0];
   report += " % - ";
   report += humStat[1];
-  report += "% - #Movements: ";
+  report += "% | #Movements: ";
   report += numMov;
   //After sending the email, stats get reset
   Blynk.email(F("Daily report"), report);
@@ -658,13 +658,19 @@ void handleReports() {
    Debugging to Blynk terminal is useful when Arduino is not connected to serial monitor,
    and when we are far from its LCD display
 */
+
+
 void debugSystem() {
   terminal.println(F("------"));
-  terminal.println(printTime());
+  terminal.print(printTime());
+  terminal.print(" - ");
+  terminal.println(millis()); 
+  /*
   terminal.print(F("Free Memory: "));
   terminal.println(freeMemory());
   terminal.print(F("SD OK: "));
   terminal.println(sdOK);
   terminal.print(F("Need Recovery: "));
   terminal.println(needRecovery);
+  */
 }
