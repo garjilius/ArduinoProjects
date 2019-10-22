@@ -8,6 +8,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include <EEPROM.h>
+#include <MemoryFree.h>
 #include "arduino_secrets.h"
 
 //#define BLYNK_PRINT Serial
@@ -78,13 +79,17 @@ void loop() {
   Blynk.run();
   timer.run();
   myRTC.updateTime();
-  if(!sdOK) {
+  terminal.flush();
+
+  //Retries to open SD if failed
+  if (!sdOK) {
     sdOK = SD.begin(chipSelect);
-    if(sdOK) {
-      Serial.println("SD INITIALIZED"); 
+    if (sdOK) {
+      Serial.println(F("SD INITIALIZED"));
     }
-    else ("SD NOT WORKING!");
-  }  
+    else 
+    Serial.println(F("SD NOT WORKING!"));
+  }
 
   //SERVER!
   WiFiClient client = server.available();   // listen for incoming clients
@@ -287,12 +292,13 @@ void setup() {
   timer.setTimeout(30000, sendData);
 
   //Sets run frequency for used functions
-  timer.setInterval(1000L, sendSensor);
+  timer.setInterval(1000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
   timerSD = timer.setInterval(logInterval, logData);
-  timer.setInterval(15000L, handleDisplay);
-  timer.setInterval(5000L, checkWifi);
+  timer.setInterval(15000, handleDisplay);
+  timer.setInterval(5000, checkWifi);
   timer.setInterval(1800000L, handleReports);
+  timer.setInterval(5000, debugSystem);
 }
 
 
@@ -476,8 +482,6 @@ String printTime() {
   orario += myRTC.hours;
   orario += ":";
   orario += myRTC.minutes;
-  //orario += ":";
-  //orario += myRTC.seconds;
   return orario;
 }
 
@@ -648,4 +652,15 @@ void sendReport() {
 void handleReports() {
   if (dateChanged())
     sendReport();
+}
+
+/*
+   Debugging to Blynk terminal is useful when Arduino is not connected to serial monitor,
+   and when we are far from its LCD display
+*/
+void debugSystem() {
+  terminal.print(F("Free Memory: "));
+  terminal.println(freeMemory());
+  terminal.print("SD OK: ");
+  terminal.println(sdOK);
 }
