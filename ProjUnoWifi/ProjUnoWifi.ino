@@ -50,6 +50,15 @@ bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
+
+//Saving info used for recap email
+//Position 0: Min - position 1: Max
+int humStat[2] = {0, 0};
+float tempStat[2] = {0, 0};
+int numMov = 0;
+int currentDay = 0;
+
+
 //Google Sheets connection data
 const char* host = "script.google.com";
 const int httpsPort = 443;
@@ -86,7 +95,7 @@ void loop()
 
         //If HTTP Request is successful
         if (c == '\n') {
-          client.println("HTTP/1.1 200 OK"); 
+          client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: text/html");
           client.println();
           client.println("<HTML>");
@@ -153,7 +162,7 @@ void loop()
             int startIndex = readString.indexOf("=") + 1 ;
             int endIndex = readString.indexOf("HTTP") - 1;
             int minInterval = readString.substring(startIndex, endIndex).toInt();
-            logInterval = 60L * 1000L * minInterval; //Force value to Long 
+            logInterval = 60L * 1000L * minInterval; //Force value to Long
             timer.deleteTimer(timerGoogle);
             timer.deleteTimer(timerSD);
             timerGoogle = timer.setInterval(logInterval, sendData);
@@ -176,7 +185,7 @@ void sendSensor() {
   //Even if system is disabled, it stills sends sensor value to the app to update gauges
   if (systemDisabled == 1) {
     digitalWrite(SYSLED, LOW);
-    return; 
+    return;
   }
   digitalWrite(SYSLED, HIGH);
 
@@ -225,6 +234,7 @@ void sendSensor() {
 void setup()
 {
   Serial.begin(9600);
+  currentDay = myRTC.dayofmonth;
   pinMode(SYSLED, OUTPUT);
   pinMode(WIFILED, OUTPUT);
   dht.begin();
@@ -271,6 +281,7 @@ void setup()
   timerSD = timer.setInterval(logInterval, logData);
   timer.setInterval(15000L, handleDisplay);
   timer.setInterval(5000L, checkWifi);
+  timer.setInterval(1800000L, handleReports);
 }
 
 
@@ -287,6 +298,7 @@ void readData() {
     Serial.println("Failed to read from DHT sensor!");
     return;
   }
+  manageStats(temp, hum);
 }
 
 //Logs data do Google Sheets
@@ -416,7 +428,7 @@ void recovery() {
     deleteSDLog();
     needRecovery = 0;
 
-      //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
+    //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
     EEPROM.write(0, needRecovery);
   } else {
     // if the file didn't open, print an error:
@@ -561,6 +573,74 @@ void lcdClearLine(int i) {
   lcd.setCursor(0, i);
   lcd.print("                    ");
   lcd.setCursor(0, i);
+}
+
+/*
+ * Functions to manage stats and send reports have been split into separate functions to allow more flexibility:
+ * For example, you can send a mail recap if the date has changed (= on a new day), but you can also send a recap
+ * explicitly requesting it via control panel and so on
+ */
+
+
+//Keeps min and max temperature updated
+void manageStats(float temp, int hum) {
+  if (temp < tempStat[0]) {
+    tempStat[0] = temp;
+  }
+  if (temp > tempStat[1]) {
+    tempStat[1] = temp;
+  }
+  if (hum < humStat[0]) {
+    tempStat[0] = temp;
+  }
+  if (hum > humStat[1]) {
+    tempStat[1] = temp;
+  }
+}
+
+//Resets all stats
+void resetStats() {
+  tempStat[0] = 0;
+  tempStat[1] = 1;
+  humStat[0] = 0;
+  humStat[1] = 1;
+  numMov = 0;
+}
+
+//If the date has changed, returns true and uptates currentDay
+bool dateChanged() {
+  //If date changed
+  if (currentDay != myRTC.dayofmonth) {
+    currentDay = myRTC.dayofmonth;
+    return true;
+  }
+  return false;
+}
+
+//Sends the report mail using Blynk
+void sendReport() {
+  String report = "Min temp of the day: ";
+  report += tempStat[0];
+  report += " C, max temp of the day: ";
+  report += tempStat[1];
+  report += "C \n min hum of the day: ";
+  report += humStat[0];
+  report += " %, max hum of the day: ";
+  report += humStat[1];
+  report += "% \n Number of movements detected: ";
+  report += numMov;
+
+  //After sending the email, stats get reset
+  Blynk.email(MY_EMAIL, "Your daily report", report);
+  resetStats();
+}
+
+/*checks if the data has changed and if it has, sends a report.
+It's handy having a separate function to do it because it can be called repeatedly in a timer
+*/
+void handleReports() {
+  if (dateChanged())
+    sendReport();
 }
 
 /*
