@@ -28,7 +28,6 @@ hd44780_I2Cexp lcd;
 
 WiFiSSLClient client;
 WiFiServer server(80);
-File webFile;
 
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
@@ -43,6 +42,7 @@ int humLimit = 75;
 int tempLimit = 25;
 int timerGoogle;
 int timerSD;
+bool sdOK = false;
 long int logInterval = 600000L;
 byte needRecovery = 0;
 //Token Blynk
@@ -74,11 +74,17 @@ BLYNK_CONNECTED() {
   Blynk.syncAll();
 }
 
-void loop()
-{
+void loop() {
   Blynk.run();
   timer.run();
   myRTC.updateTime();
+  if(!sdOK) {
+    sdOK = SD.begin(chipSelect);
+    if(sdOK) {
+      Serial.println("SD INITIALIZED"); 
+    }
+    else ("SD NOT WORKING!");
+  }  
 
   //SERVER!
   WiFiClient client = server.available();   // listen for incoming clients
@@ -96,27 +102,53 @@ void loop()
 
         //If HTTP Request is successful
         if (c == '\n') {
-         webFile = SD.open("index.html");        // open requested file
-          if (webFile) {
-            // send a standard http response header
-            client.println(F("HTTP/1.1 200 OK"));
-            client.println(F("Content-Type: text/html"));
-            client.println(F("Connection: close"));
-            client.println();
-            // send web page
-            while (webFile.available()) {
-              int num_bytes_read;
-              char byte_buffer[64];
-              // get bytes from requested file
-              num_bytes_read = webFile.read(byte_buffer, 64);
-              // send the file bytes to the client
-              client.write(byte_buffer, num_bytes_read);
-            }
-            webFile.close();
-          }
-          else {
-            Serial.println(F("Web file error"));
-          }
+          client.println(F("HTTP/1.1 200 OK"));
+          client.println(F("Content-Type: text/html"));
+          client.println();
+          client.println(F("<HTML>"));
+          client.println(F("<HEAD>"));
+          client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0' />"));
+          client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
+          client.println(F("</HEAD>"));
+          client.println(F("<BODY>"));
+          client.println(F("<H1>Arduino Control Panel</H1>"));
+          client.println(F("<hr />"));
+          client.println(F("<H2>Welcome, Emanuele</H2>"));
+          client.println(F("<br />"));
+          client.println(F("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" alt=\"Circuito\" style=\"width:200px;height:200px;\">"));
+          client.println(F("<br /> <br /> <br />"));
+          client.println(F("<a href=\"/?deleteSD\"\">Delete SD Logs</a>"));
+          client.println(F("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>"));          //Reset Google Sheets log
+          client.println(F("<a href=\"/?recovery\"\">Recovery</a><br/>"));    //Start Recovery
+          client.println(F("<br /> <br />"));
+          client.println(F("<a href=\"/?logNow\"\">Log Now!</a>")); //Log to both SD and Google Sheets
+          client.println(F("<a href=\"/?sendReport\"\">Send Report!</a>")); //Log to both SD and Google Sheets
+          client.println(F("<br /> <br /> <br />"));
+          client.println(F("<a href=\"/?\"\">Reload Page</a><br/>"));
+          client.println(F("<br /> <br />"));
+          client.println(F("<form action="">"));
+          client.println(F("Frequenza Logging (minuti)"));
+          int minInterval = logInterval / 60;
+          minInterval = minInterval / 1000;
+          String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
+          interval += minInterval;
+          interval += ">";
+          client.println(interval);
+          client.println(F("<input type=\"submit\">"));
+          client.println(F("</form>"));
+          client.println(F("<br />"));
+          client.println(F("<b>Delete SD Logs:</b> deletes the log file from the SD Card"));
+          client.println(F("<br />"));
+          client.println(F("<b>Delete Google Sheets Logs:</b> deletes the log from Google Sheets"));
+          client.println(F("<br />"));
+          client.println(F("<b>Recovery:</b> syncs to google sheets data that has been logged when offline"));
+          client.println(F("<br />"));
+          client.println(F("<b>Log Now:</b> Logs last sensor data to Google Sheets and microSD Card"));
+          client.println(F("<br />"));
+          client.println(F("<b>Send Report:</b> Sends via mail the minimum and maximum values for temperature and humidity of the current day"));
+          client.println(F("<br /> <br />"));
+          client.println(F("</BODY>"));
+          client.println(F("</HTML>"));
 
           client.stop();
           if (readString.indexOf("?recovery") > 0) {
@@ -133,7 +165,7 @@ void loop()
             deleteSDLog();
           }
           if (readString.indexOf("?sendReport") > 0) {
-            Serial.println(F("Send report..."));
+            Serial.println("Send report...");
             sendReport();
           }
           if (readString.indexOf("?logInterval") > 0) {
@@ -146,7 +178,7 @@ void loop()
             timerGoogle = timer.setInterval(logInterval, sendData);
             timerSD = timer.setInterval(logInterval, logData);
             Serial.print(F("Log Interval set to: "));
-            //Serial.println(logInterval);
+            Serial.println(logInterval);
           }
           readString = "";
         }
@@ -209,8 +241,7 @@ void sendSensor() {
   }
 }
 
-void setup()
-{
+void setup() {
   Serial.begin(9600);
   currentDay = myRTC.dayofmonth;
   pinMode(SYSLED, OUTPUT);
@@ -224,7 +255,8 @@ void setup()
   lcd.setCursor(0, 0);
   //Inizializzo la SD
   lcd.setCursor(7, 2);
-  if (!SD.begin(chipSelect)) {
+  sdOK = SD.begin(chipSelect);
+  if (!sdOK) {
     Serial.println(F("SD Card failed, or not present"));
     lcd.print(F("- SD Err"));
   } else {
@@ -235,13 +267,13 @@ void setup()
   // seconds, minutes, hours, day of the week, day of the month, month, year
   myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
 
-  
-    String fv = WiFi.firmwareVersion();
-    if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-      Serial.print(F("Please upgrade the firmware. Installed: "));
-      Serial.println(fv);
-    }
-  
+
+  String fv = WiFi.firmwareVersion();
+  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
+    Serial.print(F("Please upgrade the firmware. Installed: "));
+    Serial.println(fv);
+  }
+
 
   EEPROM.get(0, needRecovery);
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
