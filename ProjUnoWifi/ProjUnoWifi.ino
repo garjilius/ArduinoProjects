@@ -87,8 +87,8 @@ void loop() {
     if (sdOK) {
       Serial.println(F("SD INITIALIZED"));
     }
-    else 
-    Serial.println(F("SD NOT WORKING!"));
+    else
+      Serial.println(F("SD NOT WORKING!"));
   }
 
   //SERVER!
@@ -251,8 +251,9 @@ void setup() {
   currentDay = myRTC.dayofmonth;
   pinMode(SYSLED, OUTPUT);
   pinMode(WIFILED, OUTPUT);
+  pinMode(DHTPIN, INPUT);
+  pinMode(IRPIN, INPUT);
   dht.begin();
-  Blynk.begin(auth, ssid, pass);
   server.begin();   // start the web server on port 80
   terminal.clear(); //Clear blynk terminal
   //Inizializzo il Display
@@ -268,6 +269,8 @@ void setup() {
     Serial.println(F("SD Card initialized."));
     lcd.print(F(" - SD OK"));
   }
+  Blynk.begin(auth, ssid, pass);
+
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
   myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
@@ -664,13 +667,13 @@ void debugSystem() {
   terminal.println(F("------"));
   terminal.print(printTime());
   terminal.print(" - ");
-  terminal.println(millis()); 
+  terminal.println(millis());
   /*
-  terminal.print(F("Free Memory: "));
-  terminal.println(freeMemory());
-  terminal.print(F("SD OK: "));
-  terminal.println(sdOK);
-  terminal.print(F("Need Recovery: "));
-  terminal.println(needRecovery);
+    terminal.print(F("Free Memory: "));
+    terminal.println(freeMemory());
+    terminal.print(F("SD OK: "));
+    terminal.println(sdOK);
+    terminal.print(F("Need Recovery: "));
+    terminal.println(needRecovery);
   */
 }
