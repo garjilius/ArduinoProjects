@@ -23,8 +23,8 @@ hd44780_I2Cexp lcd;
 #define EVTEMP 1
 #define EVMOV 2
 
-#define DHTTYPE DHT11     // DHT 11
-//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
+//#define DHTTYPE DHT11     // DHT 11
+#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
 WiFiSSLClient client;
 WiFiServer server(80);
@@ -43,7 +43,7 @@ int tempLimit = 25;
 int timerGoogle;
 int timerSD;
 bool sdOK = false;
-long int logInterval = 600000L;
+long int logInterval = 60000L;
 byte needRecovery = 0;
 //Token Blynk
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
@@ -274,7 +274,7 @@ void setup() {
 
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
-  myRTC.setDS1302Time(00, 20, 12, 1, 14, 10, 2019);
+  myRTC.setDS1302Time(00, 37, 15, 3, 23, 10, 2019);
 
 
   String fv = WiFi.firmwareVersion();
@@ -367,8 +367,8 @@ void sendData() {
 //Logs data to SD
 void logData() {
   String dataString;
-  //dataString += printDate(); //Andrà riattivato quando connetterò l'orologio
-  dataString += "19/10/2019-22.10.00";
+  dataString += printDate(); //Andrà riattivato quando connetterò l'orologio
+  //dataString += "19/10/2019-22.10.00";
   dataString += " ";
   dataString += temp;
   dataString += " ";
@@ -401,7 +401,6 @@ void logData() {
 */
 void recovery() {
   File myFile;
-  lcdClearLine(3);
   myFile = SD.open("LOG.TXT");
   if (myFile) {
 
@@ -418,6 +417,7 @@ void recovery() {
       if (toRecover == 1) {
         if (!client.connect(host, httpsPort)) {
           Serial.println(F("Recovery failed"));
+          lcdClearLine(3);
           lcd.print(F("Recovery FAILED"));
           return;
         }
@@ -439,6 +439,7 @@ void recovery() {
           String line = client.readStringUntil('\n');
           if (line == "\r") {
             Serial.println(F("Line recovered"));
+            lcdClearLine(3);
             lcd.print(F("Recovery SUCCESS"));
             break;
           }
@@ -518,8 +519,14 @@ void handleDisplay() {
   lcd.setCursor(0, 1);
   lcd.print(F("IP: "));
   lcd.print(WiFi.localIP());
-  lcdClearLine(3);
+  lcd.setCursor(0, 3);
   lcd.print(F("Log:"));
+  lcd.setCursor(7,2);
+    if (!sdOK) {
+    lcd.print(F("- SD Err"));
+  } else {
+    lcd.print(F(" - SD OK"));
+  }
 }
 
 //If WIFI is not working, wifi led is switched off and we attempt to reconnect to wifi and to blynk servers
@@ -528,12 +535,13 @@ void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
-    WiFi.begin(ssid,pass);
+    lcdClearLine(1);
+    WiFi.begin(ssid, pass);
     Blynk.connect(10000);
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));
-  } 
+  }
 }
 
 //Check if log lines need to be synced from the SD card to google sheets
@@ -552,7 +560,8 @@ void resetSheets() {
   lcdClearLine(3);
   if (!client.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
-    lcd.print(F("CLOUD RESET OK"));
+    lcd.setCursor(4, 3);
+    lcd.print(F("CLOUD RESET FAIL"));
     return;
   }
   String url = "/macros/s/" + GAS_ID + "/exec?reset=1";
@@ -567,7 +576,8 @@ void resetSheets() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       Serial.println(F("Google Sheets Reset: SUCCESS"));
-      lcd.print(F("CLOUD RESET OK"));
+      lcd.setCursor(4, 3);
+      lcd.print(F("CLOUD RESET SUCCESS"));
       break;
     }
   }
@@ -578,9 +588,11 @@ void deleteSDLog() {
   lcdClearLine(3);
   bool fileRemoved = SD.remove("LOG.TXT");
   if (fileRemoved) {
+    lcd.setCursor(4, 3);
     lcd.print(F("SD RESET OK"));
     Serial.println(F("File succesfully removed"));
   } else {
+    lcd.setCursor(4, 3);
     lcd.print(F("SD RESET ERR"));
     Serial.println(F("Failed deleting log file"));
     sdOK = false;
