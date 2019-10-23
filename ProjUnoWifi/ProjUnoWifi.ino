@@ -527,15 +527,11 @@ void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
-    WiFi.begin(ssid, pass);
-
+    Blynk.begin(auth, ssid, pass);
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));
-  }
-  if (!Blynk.connected()) {
-    Blynk.connect();
-  }
+  } 
 }
 
 //Check if log lines need to be synced from the SD card to google sheets
