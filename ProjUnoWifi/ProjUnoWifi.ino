@@ -103,7 +103,6 @@ void loop() {
           readString += c;
           //Serial.print(c);
         }
-
         //If HTTP Request is successful
         if (c == '\n') {
           client.println(F("HTTP/1.1 200 OK"));
@@ -112,6 +111,7 @@ void loop() {
           client.println(F("<HTML>"));
           client.println(F("<HEAD>"));
           client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
+          client.println(F("<script type=\"text/javascript\" src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jstime.js?dl=00\"></script>"));
           client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
           client.println(F("</HEAD>"));
           client.println(F("<BODY>"));
@@ -127,18 +127,11 @@ void loop() {
           client.println(F("<br/><br/>"));
           client.println(F("<a href=\"/?logNow\"\">Log Now!</a>")); //Log to both SD and Google Sheets
           client.println(F("<a href=\"/?sendReport\"\">Send Report!</a>")); //Log to both SD and Google Sheets
-          client.println(F("<br/><br/>"));
+          client.println(F("<br/><br/><br/>"));
           client.println(F("<a href=\"/?\"\">Reload Page</a><br/>"));
-          client.println(F("<br/><br/>"));
-          client.println(F("<form action=> SET DATE: Day Of Month/Month/Year HH:MM <BR><BR>"));
-          client.println(F("<input type=\"number\" name=\"day\">"));
-          client.println(F("<input type=\"number\" name=\"month\">"));
-          client.println(F("<input type=\"number\" name=\"year\">"));
-          client.println(F("<input type=\"number\" name=\"HH\">"));
-          client.println(F("<input type=\"number\" name=\"MM\">"));
-          client.println(F("<input type=\"submit\">"));
-          client.println(F("</form>"));
           client.println(F("<br/>"));
+          client.println(F("<button class=\"button button2\"onclick=\"getTime()\">Set Time</button>"));
+          client.println(F("<br/><br/>"));
           client.println(F("<form action="">"));
           client.println(F("Frequenza Logging (minuti)"));
           int minInterval = logInterval / 60;
@@ -149,24 +142,37 @@ void loop() {
           client.println(interval);
           client.println(F("<input type=\"submit\">"));
           client.println(F("</form>"));
-          client.println(F("<br />"));
-/*          client.println(F("<b>Delete SD Logs:</b> deletes the log file from the SD Card"));
-          client.println(F("<br />"));
-          client.println(F("<b>Delete Google Sheets Logs:</b> deletes the log from Google Sheets"));
-          client.println(F("<br />"));
-          client.println(F("<b>Recovery:</b> syncs to google sheets data that has been logged when offline"));
-          client.println(F("<br />"));
-          client.println(F("<b>Log Now:</b> Logs last sensor data to Google Sheets and microSD Card"));
-          client.println(F("<br />"));
-          client.println(F("<b>Send Report:</b> Sends via mail the minimum and maximum values for temperature and humidity of the current day")); */
+          /*          client.println(F("<b>Delete SD Logs:</b> deletes the log file from the SD Card"));
+                    client.println(F("<br />"));
+                    client.println(F("<b>Delete Google Sheets Logs:</b> deletes the log from Google Sheets"));
+                    client.println(F("<br />"));
+                    client.println(F("<b>Recovery:</b> syncs to google sheets data that has been logged when offline"));
+                    client.println(F("<br />"));
+                    client.println(F("<b>Log Now:</b> Logs last sensor data to Google Sheets and microSD Card"));
+                    client.println(F("<br />"));
+                    client.println(F("<b>Send Report:</b> Sends via mail the minimum and maximum values for temperature and humidity of the current day")); */
           client.println(F("<br/> <br/>"));
           client.println(F("</BODY>"));
           client.println(F("</HTML>"));
 
           client.stop();
           //E' stata settata una data
-          if (readString.indexOf("?day") > 0) {
-            
+          if (readString.indexOf("?date") > 0) {
+            //GET /?date=03-23-10-2019+22:19:13
+            //giorno-mese-anno-ora-minuto-secondo
+            int date[6];
+            date[6] = readString.substring(11, 13).toInt(); //dayofweek
+            date[0] = readString.substring(14, 16).toInt(); //giorno
+            date[1] = readString.substring(17, 19).toInt(); //mese
+            date[2] = readString.substring(20, 24).toInt(); //anno
+            date[3] = readString.substring(25, 27).toInt(); //ora
+            date[4] = readString.substring(28, 30).toInt(); //minuto
+            date[5] = readString.substring(31, 33).toInt(); //secondo
+            // seconds, minutes, hours, day of the week, day of the month, month, year
+            myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
+            for (int i = 0; i < 7; i++) {
+              Serial.println(date[i]);
+            }
           }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
@@ -315,7 +321,7 @@ void setup() {
   timer.setInterval(15000, handleDisplay);
   timer.setInterval(5000, checkWifi);
   timer.setInterval(1800000L, handleReports);
-  //timer.setInterval(5000, debugSystem);
+  timer.setInterval(5000, debugSystem);
 }
 
 
@@ -534,8 +540,8 @@ void handleDisplay() {
   lcd.print(WiFi.localIP());
   lcd.setCursor(0, 3);
   lcd.print(F("Log:"));
-  lcd.setCursor(7,2);
-    if (!sdOK) {
+  lcd.setCursor(7, 2);
+  if (!sdOK) {
     lcd.print(F("- SD Err"));
   } else {
     lcd.print(F(" - SD OK"));
