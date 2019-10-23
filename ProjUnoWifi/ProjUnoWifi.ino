@@ -269,7 +269,8 @@ void setup() {
     Serial.println(F("SD Card initialized."));
     lcd.print(F(" - SD OK"));
   }
-  Blynk.begin(auth, ssid, pass);
+  WiFi.begin(ssid, pass);
+  Blynk.config(auth);
 
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
@@ -527,7 +528,8 @@ void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
-    Blynk.begin(auth, ssid, pass);
+    WiFi.connect(ssid,pass);
+    Blynk.connect(10000);
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));
