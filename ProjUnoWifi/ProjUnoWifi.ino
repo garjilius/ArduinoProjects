@@ -271,14 +271,11 @@ void setup() {
   lcd.begin(20, 4);
   lcd.setCursor(0, 0);
   //Inizializzo la SD
-  lcd.setCursor(7, 2);
   sdOK = SD.begin(chipSelect);
   if (!sdOK) {
     Serial.println(F("SD Card failed, or not present"));
-    lcd.print(F("- SD Err"));
   } else {
     Serial.println(F("SD Card initialized."));
-    lcd.print(F(" - SD OK"));
   }
   WiFi.begin(ssid, pass);
   Blynk.config(auth);
@@ -373,8 +370,7 @@ void sendData() {
 //Logs data to SD
 void logData() {
   String dataString;
-  dataString += printDate(); //Andrà riattivato quando connetterò l'orologio
-  //dataString += "19/10/2019-22.10.00";
+  dataString += printDate();
   dataString += " ";
   dataString += temp;
   dataString += " ";
@@ -463,7 +459,6 @@ void recovery() {
     Serial.println(F("error opening log file"));
     lcd.print(F("Recovery FAILED"));
     sdOK = false;
-
   }
 }
 
