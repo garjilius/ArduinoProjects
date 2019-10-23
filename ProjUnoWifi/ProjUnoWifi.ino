@@ -528,7 +528,7 @@ void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
-    WiFi.connect(ssid,pass);
+    WiFi.begin(ssid,pass);
     Blynk.connect(10000);
   } else {
     digitalWrite(WIFILED, HIGH);
