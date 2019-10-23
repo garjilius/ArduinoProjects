@@ -8,7 +8,6 @@
 #include <SPI.h>
 #include <SD.h>
 #include <EEPROM.h>
-#include <MemoryFree.h>
 #include "arduino_secrets.h"
 
 //#define BLYNK_PRINT Serial
@@ -253,6 +252,7 @@ void setup() {
   pinMode(WIFILED, OUTPUT);
   pinMode(DHTPIN, INPUT);
   pinMode(IRPIN, INPUT);
+  WiFi.setTimeout(60000);
   dht.begin();
   server.begin();   // start the web server on port 80
   terminal.clear(); //Clear blynk terminal
@@ -301,7 +301,7 @@ void setup() {
   timer.setInterval(15000, handleDisplay);
   timer.setInterval(5000, checkWifi);
   timer.setInterval(1800000L, handleReports);
-  timer.setInterval(5000, debugSystem);
+  //timer.setInterval(5000, debugSystem);
 }
 
 
@@ -526,6 +526,8 @@ void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
+    WiFi.begin(ssid, pass);
+    
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));
@@ -669,8 +671,6 @@ void debugSystem() {
   terminal.print(" - ");
   terminal.println(millis());
   /*
-    terminal.print(F("Free Memory: "));
-    terminal.println(freeMemory());
     terminal.print(F("SD OK: "));
     terminal.println(sdOK);
     terminal.print(F("Need Recovery: "));
