@@ -239,13 +239,17 @@ void sendSensor() {
 
 //Detects movements. Called by a timer in setup. If a movement is detected, 60s must pass before the next time the function is called
 void detectMovement() {
+  if (systemDisabled == 1) {
+    return;
+  }
   if (digitalRead(IRPIN) == HIGH) {
-      numMov++;
-      String notifica = "Movement Detected - ";
-      notifica += printTime();
-      Blynk.notify(notifica);
-      timer.deleteTimer(timerMovement);
-      timerMovement = timer.setInterval(60000, detectMovement);
+    numMov++;
+    String notifica = "Movement Detected - ";
+    notifica += printTime();
+    Blynk.notify(notifica);
+    terminal.println("Movement detected");
+    timer.deleteTimer(timerMovement);
+    timerMovement = timer.setInterval(60000, detectMovement);
   } else {
     timer.deleteTimer(timerMovement);
     timerMovement = timer.setInterval(5000, detectMovement);
@@ -678,7 +682,7 @@ void handleReports() {
 
 void debugSystem() {
   terminal.println(F("------"));
-  terminal.print(printTime());
+  terminal.print(printDate());
   terminal.print(" - ");
   terminal.println(millis());
   terminal.println(WiFi.localIP());
