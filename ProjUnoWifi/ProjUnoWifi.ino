@@ -21,7 +21,6 @@ hd44780_I2Cexp lcd;
 //Used to identify the events in the notification array
 #define EVHUM 0
 #define EVTEMP 1
-#define EVMOV 2
 
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
@@ -40,14 +39,13 @@ int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
-int timerGoogle;
-int timerSD;
+int timerGoogle, timerSD, timerMovement;
 bool sdOK = false;
 long int logInterval = 300000L;
 byte needRecovery = 0;
 //Token Blynk
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
-bool notificationAllowed[3] = {true, true, true};
+bool notificationAllowed[2] = {true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
@@ -237,16 +235,20 @@ void sendSensor() {
   else {
     notificationAllowed[EVTEMP] = true;
   }
+}
 
+//Detects movements. Called by a timer in setup. If a movement is detected, 60s must pass before the next time the function is called
+void detectMovement() {
   if (digitalRead(IRPIN) == HIGH) {
-    if (notificationAllowed[EVMOV] == true) {
-      notificationAllowed[EVMOV] = false;
-      timer.setTimeout(60000L, enableMovementNotification); //Re-Enables movement notification after one minute
       numMov++;
       String notifica = "Movement Detected - ";
       notifica += printTime();
       Blynk.notify(notifica);
-    }
+      timer.deleteTimer(timerMovement);
+      timerMovement = timer.setInterval(60000, detectMovement);
+  } else {
+    timer.deleteTimer(timerMovement);
+    timerMovement = timer.setInterval(5000, detectMovement);
   }
 }
 
@@ -257,7 +259,7 @@ void setup() {
   pinMode(WIFILED, OUTPUT);
   pinMode(DHTPIN, INPUT);
   pinMode(IRPIN, INPUT);
-  WiFi.setTimeout(60000);
+  WiFi.setTimeout(30000);
   dht.begin();
   server.begin();   // start the web server on port 80
   terminal.clear(); //Clear blynk terminal
@@ -301,19 +303,14 @@ void setup() {
   timer.setTimeout(30000, sendData);
 
   //Sets run frequency for used functions
-  timer.setInterval(1000, sendSensor);
+  timer.setInterval(10000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
   timerSD = timer.setInterval(logInterval, logData);
   timer.setInterval(15000, handleDisplay);
   timer.setInterval(5000, checkWifi);
   timer.setInterval(1800000L, handleReports);
+  timerMovement = timer.setInterval(5000, detectMovement);
   timer.setInterval(5000, debugSystem);
-}
-
-
-//Re Enables movement notifications
-void enableMovementNotification() {
-  notificationAllowed[EVMOV] = true;
 }
 
 //Reads data from DHT sensor
@@ -684,6 +681,7 @@ void debugSystem() {
   terminal.print(printTime());
   terminal.print(" - ");
   terminal.println(millis());
+  terminal.println(WiFi.localIP());
   /*
     terminal.print(F("SD OK: "));
     terminal.println(sdOK);
