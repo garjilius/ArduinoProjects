@@ -23,8 +23,8 @@ hd44780_I2Cexp lcd;
 #define EVTEMP 1
 #define EVMOV 2
 
-//#define DHTTYPE DHT11     // DHT 11
-#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
+#define DHTTYPE DHT11     // DHT 11
+//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
 WiFiSSLClient client;
 WiFiServer server(80);
@@ -43,7 +43,7 @@ int tempLimit = 25;
 int timerGoogle;
 int timerSD;
 bool sdOK = false;
-long int logInterval = 60000L;
+long int logInterval = 300000L;
 byte needRecovery = 0;
 //Token Blynk
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
@@ -111,25 +111,34 @@ void loop() {
           client.println();
           client.println(F("<HTML>"));
           client.println(F("<HEAD>"));
-          client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0' />"));
+          client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
           client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
           client.println(F("</HEAD>"));
           client.println(F("<BODY>"));
           client.println(F("<H1>Arduino Control Panel</H1>"));
-          client.println(F("<hr />"));
+          client.println(F("<hr/>"));
           client.println(F("<H2>Welcome, Emanuele</H2>"));
-          client.println(F("<br />"));
-          client.println(F("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" alt=\"Circuito\" style=\"width:200px;height:200px;\">"));
-          client.println(F("<br /> <br /> <br />"));
+          client.println(F("<br/>"));
+          client.println(F("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" style=\"width:200px;height:200px;\">"));
+          client.println(F("<br/><br/><br/>"));
           client.println(F("<a href=\"/?deleteSD\"\">Delete SD Logs</a>"));
           client.println(F("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>"));          //Reset Google Sheets log
           client.println(F("<a href=\"/?recovery\"\">Recovery</a><br/>"));    //Start Recovery
-          client.println(F("<br /> <br />"));
+          client.println(F("<br/><br/>"));
           client.println(F("<a href=\"/?logNow\"\">Log Now!</a>")); //Log to both SD and Google Sheets
           client.println(F("<a href=\"/?sendReport\"\">Send Report!</a>")); //Log to both SD and Google Sheets
-          client.println(F("<br /> <br /> <br />"));
+          client.println(F("<br/><br/>"));
           client.println(F("<a href=\"/?\"\">Reload Page</a><br/>"));
-          client.println(F("<br /> <br />"));
+          client.println(F("<br/><br/>"));
+          client.println(F("<form action=> SET DATE: Day Of Month/Month/Year HH:MM <BR><BR>"));
+          client.println(F("<input type=\"number\" name=\"day\">"));
+          client.println(F("<input type=\"number\" name=\"month\">"));
+          client.println(F("<input type=\"number\" name=\"year\">"));
+          client.println(F("<input type=\"number\" name=\"HH\">"));
+          client.println(F("<input type=\"number\" name=\"MM\">"));
+          client.println(F("<input type=\"submit\">"));
+          client.println(F("</form>"));
+          client.println(F("<br/>"));
           client.println(F("<form action="">"));
           client.println(F("Frequenza Logging (minuti)"));
           int minInterval = logInterval / 60;
@@ -141,7 +150,7 @@ void loop() {
           client.println(F("<input type=\"submit\">"));
           client.println(F("</form>"));
           client.println(F("<br />"));
-          client.println(F("<b>Delete SD Logs:</b> deletes the log file from the SD Card"));
+/*          client.println(F("<b>Delete SD Logs:</b> deletes the log file from the SD Card"));
           client.println(F("<br />"));
           client.println(F("<b>Delete Google Sheets Logs:</b> deletes the log from Google Sheets"));
           client.println(F("<br />"));
@@ -149,12 +158,16 @@ void loop() {
           client.println(F("<br />"));
           client.println(F("<b>Log Now:</b> Logs last sensor data to Google Sheets and microSD Card"));
           client.println(F("<br />"));
-          client.println(F("<b>Send Report:</b> Sends via mail the minimum and maximum values for temperature and humidity of the current day"));
-          client.println(F("<br /> <br />"));
+          client.println(F("<b>Send Report:</b> Sends via mail the minimum and maximum values for temperature and humidity of the current day")); */
+          client.println(F("<br/> <br/>"));
           client.println(F("</BODY>"));
           client.println(F("</HTML>"));
 
           client.stop();
+          //E' stata settata una data
+          if (readString.indexOf("?day") > 0) {
+            
+          }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
           }
@@ -274,7 +287,7 @@ void setup() {
 
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
-  myRTC.setDS1302Time(00, 37, 15, 3, 23, 10, 2019);
+  myRTC.setDS1302Time(00, 28, 19, 3, 23, 10, 2019);
 
 
   String fv = WiFi.firmwareVersion();
@@ -334,8 +347,8 @@ void sendData() {
     }
     return;
   }
-  Serial.print(F("connecting to "));
-  Serial.println(host);
+  //Serial.print(F("connecting to "));
+  //Serial.println(host);
   if (!client.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
     lcd.print(F("CLOUD ERR"));
@@ -549,10 +562,6 @@ void recoveryManager() {
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
     recovery();
   }
-  else {
-    lcdClearLine(3);
-    lcd.print(F("NO RECOVERY NEEDED"));
-  }
 }
 
 //Delete all lines in Google Sheets Log
@@ -571,7 +580,6 @@ void resetSheets() {
                "User-Agent: BuildFailureDetectorESP8266\r\n" +
                "Connection: close\r\n\r\n");
 
-  Serial.println(F("Reset request sent"));
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
@@ -590,11 +598,11 @@ void deleteSDLog() {
   if (fileRemoved) {
     lcd.setCursor(4, 3);
     lcd.print(F("SD RESET OK"));
-    Serial.println(F("File succesfully removed"));
+    Serial.println(F("File removed"));
   } else {
     lcd.setCursor(4, 3);
     lcd.print(F("SD RESET ERR"));
-    Serial.println(F("Failed deleting log file"));
+    Serial.println(F("Failed deleting file"));
     sdOK = false;
   }
 }
