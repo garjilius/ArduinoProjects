@@ -209,7 +209,7 @@ void sendSensor() {
       notificationAllowed[EVHUM] = false; //Disable notifications...
       String notifica = "Humidity is too high: ";
       notifica += hum;
-      notifica += "% - :";
+      notifica += "% - ";
       notifica += printTime();
       //Blynk.email("Umidità", notifica); //Mail example
       Blynk.notify(notifica);
