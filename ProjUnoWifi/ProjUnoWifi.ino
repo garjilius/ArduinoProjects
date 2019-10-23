@@ -521,16 +521,20 @@ void handleDisplay() {
   lcd.print(F("Log:"));
 }
 
+//If WIFI is not working, wifi led is switched off and we attempt to reconnect to wifi and to blynk servers
 void checkWifi() {
   lcd.setCursor(0, 2);
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
     WiFi.begin(ssid, pass);
-    
+
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));
+  }
+  if (!Blynk.connected()) {
+    Blynk.connect();
   }
 }
 
