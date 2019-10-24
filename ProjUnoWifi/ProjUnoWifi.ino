@@ -15,13 +15,13 @@
 #define IRPIN 9
 #define SYSLED 4
 #define WIFILED 3
-//#define PINBUTTON 11
 
 hd44780_I2Cexp lcd;
 
 //Used to identify the events in the notification array
 #define EVHUM 0
 #define EVTEMP 1
+#define EVMOV 2
 
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
@@ -36,19 +36,18 @@ WidgetTerminal terminal(V1);
 int status = WL_IDLE_STATUS;
 String readString;
 const int chipSelect = 8;
-int wifiButton;
-//int previous = LOW;
 int hum;
 float temp;
 int humLimit = 75;
 int tempLimit = 25;
-int timerGoogle, timerSD, timerMovement;
+int timerGoogle;
+int timerSD;
 bool sdOK = false;
-long int logInterval = 600000L;
+long int logInterval = 300000L;
 byte needRecovery = 0;
 //Token Blynk
 char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
-bool notificationAllowed[2] = {true, true};
+bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
@@ -80,20 +79,6 @@ void loop() {
   timer.run();
   myRTC.updateTime();
   terminal.flush();
- /* wifiButton = digitalRead(PINBUTTON);
-  if (wifiButton == HIGH && previous == LOW) {
-    if (WiFi.status() == WL_CONNECTED) {
-      WiFi.end();
-      delay(200);
-    }
-    else {
-      WiFi.begin(ssid, pass);
-      delay(200);
-    }
-  }
-  previous == wifiButton;  */
-
-
 
   //Retries to open SD if failed
   if (!sdOK) {
@@ -106,12 +91,12 @@ void loop() {
   }
 
   //SERVER!
-  WiFiClient client2 = server.available();   // listen for incoming clients
+  WiFiClient client = server.available();   // listen for incoming clients
 
-  if (client2) {
-    while (client2.connected()) {
-      if (client2.available()) {
-        char c = client2.read();
+  if (client) {
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
 
         //Read HTTP Characters
         if (readString.length() < 100) {
@@ -120,47 +105,47 @@ void loop() {
         }
         //If HTTP Request is successful
         if (c == '\n') {
-          client2.println(F("HTTP/1.1 200 OK"));
-          client2.println(F("Content-Type: text/html"));
-          client2.println();
-          client2.println(F("<HTML>"));
-          client2.println(F("<HEAD>"));
-          client2.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
-          client2.println(F("<script type=\"text/javascript\" src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jstime.js?dl=00\"></script>"));
-          client2.println(F("<TITLE>Arduino Control Panel</TITLE>"));
-          client2.println(F("</HEAD>"));
-          client2.println(F("<BODY>"));
-          client2.println(F("<H1>Arduino Control Panel</H1>"));
-          client2.println(F("<hr/>"));
-          client2.println(F("<H2>Welcome, Emanuele</H2>"));
-          client2.println(F("<br/>"));
-          client2.println(F("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" style=\"width:200px;height:200px;\">"));
-          client2.println(F("<br/><br/><br/>"));
-          client2.println(F("<a href=\"/?deleteSD\"\">Delete SD Logs</a>"));
-          client2.println(F("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>"));          //Reset Google Sheets log
-          client2.println(F("<a href=\"/?recovery\"\">Recovery</a><br/>"));    //Start Recovery
-          client2.println(F("<br/>"));
-          client2.println(F("<a href=\"/?logNow\"\">Log Now!</a>")); //Log to both SD and Google Sheets
-          client2.println(F("<a href=\"/?sendReport\"\">Send Report!</a>")); //Log to both SD and Google Sheets
-          client2.println(F("<br/><br/>"));
-          client2.println(F("<a href=\"/?\"\">Reload Page</a><br/>"));
-          client2.println(F("<br/>"));
-          client2.println(F("<button class=\"button button2\"onclick=\"getTime()\">Set Time</button>"));
-          client2.println(F("<br/><br/>"));
-          client2.println(F("<form action="">"));
-          client2.println(F("Frequenza Logging (minuti)"));
+          client.println(F("HTTP/1.1 200 OK"));
+          client.println(F("Content-Type: text/html"));
+          client.println();
+          client.println(F("<HTML>"));
+          client.println(F("<HEAD>"));
+          client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
+          client.println(F("<script type=\"text/javascript\" src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jstime.js?dl=00\"></script>"));
+          client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
+          client.println(F("</HEAD>"));
+          client.println(F("<BODY>"));
+          client.println(F("<H1>Arduino Control Panel</H1>"));
+          client.println(F("<hr/>"));
+          client.println(F("<H2>Welcome, Emanuele</H2>"));
+          client.println(F("<br/>"));
+          client.println(F("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" style=\"width:200px;height:200px;\">"));
+          client.println(F("<br/><br/><br/>"));
+          client.println(F("<a href=\"/?deleteSD\"\">Delete SD Logs</a>"));
+          client.println(F("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>"));          //Reset Google Sheets log
+          client.println(F("<a href=\"/?recovery\"\">Recovery</a><br/>"));    //Start Recovery
+          client.println(F("<br/>"));
+          client.println(F("<a href=\"/?logNow\"\">Log Now!</a>")); //Log to both SD and Google Sheets
+          client.println(F("<a href=\"/?sendReport\"\">Send Report!</a>")); //Log to both SD and Google Sheets
+          client.println(F("<br/><br/>"));
+          client.println(F("<a href=\"/?\"\">Reload Page</a><br/>"));
+          client.println(F("<br/>"));
+          client.println(F("<button class=\"button button2\"onclick=\"getTime()\">Set Time</button>"));
+          client.println(F("<br/><br/>"));
+          client.println(F("<form action="">"));
+          client.println(F("Frequenza Logging (minuti)"));
           int minInterval = logInterval / 60;
           minInterval = minInterval / 1000;
           String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
           interval += minInterval;
           interval += ">";
-          client2.println(interval);
-          client2.println(F("<input type=\"submit\" class=\"button button1\">"));
-          client2.println(F("<div id='leg'></div>"));
-          client2.println(F("</BODY>"));
-          client2.println(F("</HTML>"));
+          client.println(interval);
+          client.println(F("<input type=\"submit\" class=\"button button1\">"));
+          client.println(F("<div id='leg'></div>"));
+          client.println(F("</BODY>"));
+          client.println(F("</HTML>"));
 
-          client2.stop();
+          client.stop();
           //E' stata settata una data
           if (readString.indexOf("?date") > 0) {
             //giorno-mese-anno-ora-minuto-secondo
@@ -179,7 +164,7 @@ void loop() {
             recoveryManager();
           }
           if (readString.indexOf("?logNow") > 0) {
-            //logData();
+            logData();
             sendData();
           }
           if (readString.indexOf("?reset") > 0) {
@@ -198,9 +183,9 @@ void loop() {
             int minInterval = readString.substring(startIndex, endIndex).toInt();
             logInterval = 60L * 1000L * minInterval; //Force value to Long
             timer.deleteTimer(timerGoogle);
-            //timer.deleteTimer(timerSD);
+            timer.deleteTimer(timerSD);
             timerGoogle = timer.setInterval(logInterval, sendData);
-            //timerSD = timer.setInterval(logInterval, logData);
+            timerSD = timer.setInterval(logInterval, logData);
             Serial.print(F("Log Interval set to: "));
             Serial.println(logInterval);
           }
@@ -252,24 +237,16 @@ void sendSensor() {
   else {
     notificationAllowed[EVTEMP] = true;
   }
-}
 
-//Detects movements. Called by a timer in setup. If a movement is detected, 60s must pass before the next time the function is called
-void detectMovement() {
-  if (systemDisabled == 1) {
-    return;
-  }
   if (digitalRead(IRPIN) == HIGH) {
-    numMov++;
-    String notifica = "Movement Detected - ";
-    notifica += printTime();
-    Blynk.notify(notifica);
-    terminal.println("Movement detected");
-    timer.deleteTimer(timerMovement);
-    timerMovement = timer.setInterval(60000, detectMovement);
-  } else {
-    timer.deleteTimer(timerMovement);
-    timerMovement = timer.setInterval(5000, detectMovement);
+    if (notificationAllowed[EVMOV] == true) {
+      notificationAllowed[EVMOV] = false;
+      timer.setTimeout(60000L, enableMovementNotification); //Re-Enables movement notification after one minute
+      numMov++;
+      String notifica = "Movement Detected - ";
+      notifica += printTime();
+      Blynk.notify(notifica);
+    }
   }
 }
 
@@ -279,9 +256,8 @@ void setup() {
   pinMode(SYSLED, OUTPUT);
   pinMode(WIFILED, OUTPUT);
   pinMode(DHTPIN, INPUT);
-//  pinMode(PINBUTTON, INPUT);
   pinMode(IRPIN, INPUT);
-  WiFi.setTimeout(30000);
+  WiFi.setTimeout(60000);
   dht.begin();
   server.begin();   // start the web server on port 80
   terminal.clear(); //Clear blynk terminal
@@ -289,18 +265,21 @@ void setup() {
   lcd.begin(20, 4);
   lcd.setCursor(0, 0);
   //Inizializzo la SD
+  lcd.setCursor(7, 2);
   sdOK = SD.begin(chipSelect);
   if (!sdOK) {
     Serial.println(F("SD Card failed, or not present"));
+    lcd.print(F("- SD Err"));
   } else {
     Serial.println(F("SD Card initialized."));
+    lcd.print(F(" - SD OK"));
   }
   WiFi.begin(ssid, pass);
   Blynk.config(auth);
 
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
-  myRTC.setDS1302Time(00, 8, 19, 3, 23, 10, 2019);
+  myRTC.setDS1302Time(00, 28, 19, 3, 23, 10, 2019);
 
 
   String fv = WiFi.firmwareVersion();
@@ -312,24 +291,29 @@ void setup() {
 
   EEPROM.get(0, needRecovery);
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
-    Serial.println(F("Need recovery"));
+    Serial.println(F("Need recovery, Network Available"));
   }
 
   printWifiData();
 
   //First logging happens 30s after boot, regardless of logging interval settings
-  //timer.setTimeout(30000, logData);
+  timer.setTimeout(30000, logData);
   timer.setTimeout(30000, sendData);
 
   //Sets run frequency for used functions
-  timer.setInterval(10000, sendSensor);
+  timer.setInterval(1000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
-  //timerSD = timer.setInterval(logInterval, logData);
+  timerSD = timer.setInterval(logInterval, logData);
   timer.setInterval(15000, handleDisplay);
-  timer.setInterval(60000, checkWifi);
+  timer.setInterval(20000, checkWifi);
   timer.setInterval(1800000L, handleReports);
-  timerMovement = timer.setInterval(5000, detectMovement);
-  timer.setInterval(30000, debugSystem);
+  //timer.setInterval(5000, debugSystem);
+}
+
+
+//Re Enables movement notifications
+void enableMovementNotification() {
+  notificationAllowed[EVMOV] = true;
 }
 
 //Reads data from DHT sensor
@@ -346,13 +330,20 @@ void readData() {
 //Logs data do Google Sheets
 void sendData() {
   lcd.setCursor(4, 3);
-
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println(F("No Connection"));
+    if (needRecovery != 1) {
+      needRecovery = 1;
+      //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
+      EEPROM.write(0, needRecovery);
+    }
+    return;
+  }
   //Serial.print(F("connecting to "));
   //Serial.println(host);
   if (!client.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
     lcd.print(F("CLOUD ERR"));
-    logData(); //ONLY If logging to Google unsuccessful, log to sd
     if (needRecovery != 1) {
       needRecovery = 1;
       EEPROM.write(0, needRecovery);
@@ -380,25 +371,24 @@ void sendData() {
 
 //Logs data to SD
 void logData() {
-  String dataString = "";
-  dataString += printDate();
-  //dataString += "17/10/2019-22.37.14";
+  String dataString;
+  dataString += printDate(); //Andrà riattivato quando connetterò l'orologio
+  //dataString += "19/10/2019-22.10.00";
   dataString += " ";
   dataString += temp;
   dataString += " ";
   dataString += hum;
-  //dataString += " ";
-  // dataString += needRecovery;
+  dataString += " ";
+  dataString += needRecovery;
 
-  File dataFile;
-  dataFile = SD.open("LOG.TXT", FILE_WRITE);
+  File dataFile = SD.open("log.txt", FILE_WRITE);
   lcd.setCursor(14, 3);
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.println(dataString);
     dataFile.close();
     // print to the serial port too:
-    Serial.print(F("SdLogged: "));
+    Serial.print(F("LoggedToSD: "));
     Serial.println(dataString);
     lcd.print("SD OK");
   }
@@ -427,40 +417,39 @@ void recovery() {
       String temp = myFile.readStringUntil(' ');
       String hum = myFile.readStringUntil(' ');
       String needRecovery = myFile.readStringUntil('\r');
-      //   int toRecover = needRecovery.toInt();
+      int toRecover = needRecovery.toInt();
 
-      //  if (toRecover == 1) {
-      if (!client.connect(host, httpsPort)) {
-        Serial.println(F("Recovery failed"));
-        lcdClearLine(3);
-        lcd.print(F("Recovery FAILED"));
-        return;
-      }
-      Serial.println(F("Recovering Line..."));
-      String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum + "&date=" + date;
-      Serial.print(F("requesting URL: "));
-      Serial.println(url);
-
-      client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                   "Host: " + host + "\r\n" +
-                   "User-Agent: BuildFailureDetectorESP8266\r\n" +
-                   "Connection: close\r\n\r\n");
-
-      while (client.available()) {
-        char c = client.read();
-        Serial.print(c);
-      }
-      while (client.connected()) {
-        String line = client.readStringUntil('\n');
-        Serial.print(line);
-        if (line == "\r") {
-          Serial.println(F("Line recovered"));
+      if (toRecover == 1) {
+        if (!client.connect(host, httpsPort)) {
+          Serial.println(F("Recovery failed"));
           lcdClearLine(3);
-          lcd.print(F("Recovery SUCCESS"));
-          break;
+          lcd.print(F("Recovery FAILED"));
+          return;
+        }
+        Serial.println(F("Recovering Line..."));
+        String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum + "&date=" + date;
+        Serial.print(F("requesting URL: "));
+        Serial.println(url);
+
+        client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+                     "Host: " + host + "\r\n" +
+                     "User-Agent: BuildFailureDetectorESP8266\r\n" +
+                     "Connection: close\r\n\r\n");
+
+        while (client.available()) {
+          char c = client.read();
+          Serial.print(c);
+        }
+        while (client.connected()) {
+          String line = client.readStringUntil('\n');
+          if (line == "\r") {
+            Serial.println(F("Line recovered"));
+            lcdClearLine(3);
+            lcd.print(F("Recovery SUCCESS"));
+            break;
+          }
         }
       }
-      //  }
     }
     myFile.close();
     deleteSDLog();
@@ -473,6 +462,7 @@ void recovery() {
     Serial.println(F("error opening log file"));
     lcd.print(F("Recovery FAILED"));
     sdOK = false;
+
   }
 }
 
@@ -499,35 +489,27 @@ void printWifiData() {
 
 String printTime() {
   String orario = "";
-  orario += toTwoDigits(myRTC.hours);
-  orario += ".";
-  orario += toTwoDigits(myRTC.minutes);
+  orario += myRTC.hours;
+  orario += ":";
+  orario += myRTC.minutes;
   return orario;
 }
 
 
 String printDate() {
   String orario = "";
-  orario += toTwoDigits(myRTC.dayofmonth);
+  orario += myRTC.dayofmonth;
   orario += "/";
-  orario += toTwoDigits(myRTC.month);
+  orario += myRTC.month;
   orario += "/";
   orario += myRTC.year;
   orario += "-";
-  orario += toTwoDigits(myRTC.hours);
+  orario += myRTC.hours;
   orario += ".";
-  orario += toTwoDigits(myRTC.minutes);
+  orario += myRTC.minutes;
   orario += ".";
-  orario += toTwoDigits(myRTC.seconds);
+  orario += myRTC.seconds;
   return orario;
-}
-
-String toTwoDigits(int input) {
-  String output;
-  output = String(input);
-  if (output.length() < 2) {
-    output = "0" + output;
-  }
 }
 
 
@@ -559,11 +541,8 @@ void checkWifi() {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
     lcdClearLine(1);
-    terminal.println("WIFI ERROR");
     WiFi.begin(ssid, pass);
     Blynk.connect(10000);
-    delay(5000);
-    //server.begin(); //SERVE??
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));
@@ -702,10 +681,9 @@ void handleReports() {
 
 void debugSystem() {
   terminal.println(F("------"));
-  terminal.print(printDate());
+  terminal.print(printTime());
   terminal.print(" - ");
   terminal.println(millis());
-  terminal.println(WiFi.localIP());
   /*
     terminal.print(F("SD OK: "));
     terminal.println(sdOK);
