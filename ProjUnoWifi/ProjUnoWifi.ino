@@ -162,7 +162,7 @@ void loop() {
             recoveryManager();
           }
           if (readString.indexOf("?logNow") > 0) {
-            logData();
+            //logData();
             sendData();
           }
           if (readString.indexOf("?reset") > 0) {
@@ -181,9 +181,9 @@ void loop() {
             int minInterval = readString.substring(startIndex, endIndex).toInt();
             logInterval = 60L * 1000L * minInterval; //Force value to Long
             timer.deleteTimer(timerGoogle);
-            timer.deleteTimer(timerSD);
+            //timer.deleteTimer(timerSD);
             timerGoogle = timer.setInterval(logInterval, sendData);
-            timerSD = timer.setInterval(logInterval, logData);
+            //timerSD = timer.setInterval(logInterval, logData);
             Serial.print(F("Log Interval set to: "));
             Serial.println(logInterval);
           }
@@ -300,13 +300,13 @@ void setup() {
   printWifiData();
 
   //First logging happens 30s after boot, regardless of logging interval settings
-  timer.setTimeout(30000, logData);
+  //timer.setTimeout(30000, logData);
   timer.setTimeout(30000, sendData);
 
   //Sets run frequency for used functions
   timer.setInterval(10000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
-  timerSD = timer.setInterval(logInterval, logData);
+  //timerSD = timer.setInterval(logInterval, logData);
   timer.setInterval(15000, handleDisplay);
   timer.setInterval(5000, checkWifi);
   timer.setInterval(1800000L, handleReports);
@@ -328,15 +328,7 @@ void readData() {
 //Logs data do Google Sheets
 void sendData() {
   lcd.setCursor(4, 3);
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println(F("No Connection"));
-    if (needRecovery != 1) {
-      needRecovery = 1;
-      //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
-      EEPROM.write(0, needRecovery);
-    }
-    return;
-  }
+
   //Serial.print(F("connecting to "));
   //Serial.println(host);
   if (!client.connect(host, httpsPort)) {
@@ -345,6 +337,7 @@ void sendData() {
     if (needRecovery != 1) {
       needRecovery = 1;
       EEPROM.write(0, needRecovery);
+      logData(); //ONLY If logging to Google unsuccessful, log to sd
     }
     return;
   }
@@ -379,7 +372,6 @@ void logData() {
  // dataString += needRecovery;
 
 //Modifica fatta per loggare su SD solo se non va a buon fine il log su google
-  if (needRecovery == 1) {
     File dataFile = SD.open("log.txt", FILE_WRITE);
     lcd.setCursor(14, 3);
     // if the file is available, write to it:
@@ -387,7 +379,7 @@ void logData() {
       dataFile.println(dataString);
       dataFile.close();
       // print to the serial port too:
-      Serial.print(F("LoggedToSD: "));
+      Serial.print(F("SdLogged: "));
       Serial.println(dataString);
       lcd.print("SD OK");
     }
@@ -397,7 +389,6 @@ void logData() {
       lcd.print(F("SD ERR"));
       sdOK = false;
     }
-  }
 }
 
 
