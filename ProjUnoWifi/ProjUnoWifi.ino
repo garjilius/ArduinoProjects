@@ -111,27 +111,12 @@ void loop() {
           client2.println(F("<HTML>"));
           client2.println(F("<HEAD>"));
           client2.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
-          client2.println(F("<script type=\"text/javascript\" src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jstime.js?dl=00\"></script>"));
+          //Most of the page gets added via remote javascript to save space on arduino and speed things up
+          client2.println(F("<script type=\"text/javascript\" src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jsextra.js?dl=0\"></script>"));
           client2.println(F("<TITLE>Arduino Control Panel</TITLE>"));
           client2.println(F("</HEAD>"));
           client2.println(F("<BODY>"));
-          client2.println(F("<H1>Arduino Control Panel</H1>"));
-          client2.println(F("<hr/>"));
-          client2.println(F("<H2>Welcome, Emanuele</H2>"));
-          client2.println(F("<br/>"));
-          client2.println(F("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" style=\"width:200px;height:200px;\">"));
-          client2.println(F("<br/><br/><br/>"));
-          client2.println(F("<a href=\"/?deleteSD\"\">Delete SD Logs</a>"));
-          client2.println(F("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>"));          //Reset Google Sheets log
-          client2.println(F("<a href=\"/?recovery\"\">Recovery</a><br/>"));    //Start Recovery
-          client2.println(F("<br/>"));
-          client2.println(F("<a href=\"/?logNow\"\">Log Now!</a>")); //Log to both SD and Google Sheets
-          client2.println(F("<a href=\"/?sendReport\"\">Send Report!</a>")); //Log to both SD and Google Sheets
-          client2.println(F("<br/><br/>"));
-          client2.println(F("<a href=\"/?\"\">Reload Page</a><br/>"));
-          client2.println(F("<br/>"));
-          client2.println(F("<button class=\"button button2\"onclick=\"getTime()\">Set Time</button>"));
-          client2.println(F("<br/><br/>"));
+          client2.println(F("<div id='mainBody'></div>"));
           client2.println(F("<form action="">"));
           client2.println(F("Frequenza Logging (minuti)"));
           int minInterval = logInterval / 60;
