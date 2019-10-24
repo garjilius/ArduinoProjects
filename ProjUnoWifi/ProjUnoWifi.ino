@@ -27,7 +27,6 @@ hd44780_I2Cexp lcd;
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
 WiFiSSLClient client;
-WiFiClient client2;
 WiFiServer server(80);
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -79,6 +78,7 @@ void loop() {
   Blynk.run();
   timer.run();
   myRTC.updateTime();
+  // server.begin();
 
   //Retries to open SD if failed
   if (!sdOK) {
@@ -91,12 +91,12 @@ void loop() {
   }
 
   //SERVER!
-  client2 = server.available();   // listen for incoming clients
+  WiFiClient client = server.available();   // listen for incoming clients
 
-  if (client2) {
-    while (client2.connected()) {
-      if (client2.available()) {
-        char c = client2.read();
+  if (client) {
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
 
         //Read HTTP Characters
         if (readString.length() < 100) {
@@ -105,32 +105,32 @@ void loop() {
         }
         //If HTTP Request is successful
         if (c == '\n') {
-          client2.println(F("HTTP/1.1 200 OK"));
-          client2.println(F("Content-Type: text/html"));
-          client2.println();
-          client2.println(F("<HTML>"));
-          client2.println(F("<HEAD>"));
-          client2.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
+          client.println(F("HTTP/1.1 200 OK"));
+          client.println(F("Content-Type: text/html"));
+          client.println();
+          client.println(F("<HTML>"));
+          client.println(F("<HEAD>"));
+          client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
           //Most of the page gets added via remote javascript to save space on arduino and speed things up
-          client2.println(F("<script type=\"text/javascript\" src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jsextra.js?dl=0\"></script>"));
-          client2.println(F("<TITLE>Arduino Control Panel</TITLE>"));
-          client2.println(F("</HEAD>"));
-          client2.println(F("<BODY>"));
-          client2.println(F("<div id='mainBody'></div>"));
-          client2.println(F("<form action="">"));
-          client2.println(F("Frequenza Logging (minuti)"));
+          client.println(F("<script type=\"text/javascript\" src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jsextra.js?dl=0\"></script>"));
+          client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
+          client.println(F("</HEAD>"));
+          client.println(F("<BODY>"));
+          client.println(F("<div id='mainBody'></div>"));
+          client.println(F("<form action="">"));
+          client.println(F("Frequenza Logging (minuti)"));
           int minInterval = logInterval / 60;
           minInterval = minInterval / 1000;
           String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
           interval += minInterval;
           interval += ">";
-          client2.println(interval);
-          client2.println(F("<input type=\"submit\" class=\"button button1\">"));
-          client2.println(F("<div id='leg'></div>"));
-          client2.println(F("</BODY>"));
-          client2.println(F("</HTML>"));
+          client.println(interval);
+          client.println(F("<input type=\"submit\" class=\"button button1\">"));
+          client.println(F("<div id='leg'></div>"));
+          client.println(F("</BODY>"));
+          client.println(F("</HTML>"));
 
-          client2.stop();
+          client.stop();
           //E' stata settata una data
           if (readString.indexOf("?date") > 0) {
             //giorno-mese-anno-ora-minuto-secondo
@@ -145,6 +145,7 @@ void loop() {
             // seconds, minutes, hours, day of the week, day of the month, month, year
             myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
             currentDay = myRTC.dayofmonth;
+            Serial.println(F("Time Set"));
           }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
@@ -181,7 +182,7 @@ void loop() {
 
 void sendSensor() {
   readData();
-  if (client2) {
+  if (client) {
     Serial.println(F("Aborted sendSensor, need to serve client"));
     return;
   }
@@ -194,7 +195,7 @@ void sendSensor() {
     return;
   }
   //If a client is beign served, you can't send HTTP request
-  if (client2) {
+  if (client) {
     return;
   }
   digitalWrite(SYSLED, HIGH);
@@ -294,7 +295,7 @@ void setup() {
   timer.setInterval(1000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
   timer.setInterval(15000, handleDisplay);
-  timer.setInterval(20000, checkWifi);
+  timer.setInterval(30000, checkWifi);
   timer.setInterval(1800000L, handleReports);
   //timer.setInterval(5000, debugSystem);
 }
@@ -318,7 +319,7 @@ void readData() {
 
 //Logs data do Google Sheets
 void sendData() {
-  if (client2) {
+  if (client) {
     Serial.println(F("Aborted logging, need to serve client"));
     return;
   }
@@ -389,20 +390,15 @@ void logData() {
    This functions allows me to upload to Google Sheets data that had only been logged to the SD card due to a lack of connection
 */
 void recovery() {
-  if (client2) {
-    Serial.println(F("Aborted recovery, need to serve client"));
-    return;
-  }
-  File myFile;
-  myFile = SD.open("LOG.TXT");
+  File myFile = SD.open("LOG.TXT");
   if (myFile) {
 
     // read from the file until there's nothing else in it:
     while (myFile.available()) {
-      String date = myFile.readStringUntil(' ');
-
-      String temp = myFile.readStringUntil(' ');
-      String hum = myFile.readStringUntil('\r');
+      String dateS = myFile.readStringUntil(' ');
+      String tempS = myFile.readStringUntil(' ');
+      String humS = myFile.readStringUntil('\n');
+      String needRecovery = myFile.readStringUntil('\r');
 
       if (!client.connect(host, httpsPort)) {
         Serial.println(F("Recovery failed"));
@@ -411,8 +407,7 @@ void recovery() {
         return;
       }
       Serial.println(F("Recovering Line..."));
-      Serial.println(hum);
-      String url = "/macros/s/" + GAS_ID + "/exec?temp=" + temp + "&hum=" + hum + "&date=" + date;
+      String url = "/macros/s/" + GAS_ID + "/exec?temp=" + tempS + "&hum=" + humS + "&date=" + dateS;
       url.replace("\n", ""); //Removes newlines
       url.replace("\r", "");
       Serial.print(F("requesting URL: "));
@@ -423,12 +418,15 @@ void recovery() {
                    "User-Agent: BuildFailureDetectorESP8266\r\n" +
                    "Connection: close\r\n\r\n");
 
+
+
       while (client.available()) {
         char c = client.read();
         Serial.print(c);
       }
       while (client.connected()) {
-        String line = client.readStringUntil('\n');
+        //String line = client.readStringUntil('\n');
+        Serial.println(line);
         if (line == "\r") {
           Serial.println(F("Line recovered"));
           lcdClearLine(3);
@@ -529,7 +527,7 @@ void checkWifi() {
     lcdClearLine(1);
     WiFi.begin(ssid, pass);
     Blynk.connect(10000);
-    server.begin();
+    //server.begin();
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));
