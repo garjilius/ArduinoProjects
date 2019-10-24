@@ -166,7 +166,6 @@ void loop() {
             int minInterval = readString.substring(startIndex, endIndex).toInt();
             logInterval = 60L * 1000L * minInterval; //Force value to Long
             timer.deleteTimer(timerGoogle);
-            timer.deleteTimer(timerSD);
             timerGoogle = timer.setInterval(logInterval, sendData);
             Serial.print(F("Log Interval set to: "));
             Serial.println(logInterval);
