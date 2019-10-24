@@ -27,6 +27,7 @@ hd44780_I2Cexp lcd;
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
 WiFiSSLClient client;
+WiFiClient client2;
 WiFiServer server(80);
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -74,6 +75,7 @@ BLYNK_CONNECTED() {
 }
 
 void loop() {
+  Serial.println("WORKING...");
   Blynk.run();
   timer.run();
   myRTC.updateTime();
@@ -90,7 +92,7 @@ void loop() {
   }
 
   //SERVER!
-  WiFiClient client2 = server.available();   // listen for incoming clients
+  client2 = server.available();   // listen for incoming clients
 
   if (client2) {
     while (client2.connected()) {
@@ -180,12 +182,20 @@ void loop() {
 
 void sendSensor() {
   readData();
+  if (client2) {
+    Serial.println(F("Aborted sendSensor, need to serve client"));
+    return;
+  }
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
 
   //Even if system is disabled, it stills sends sensor value to the app to update gauges
   if (systemDisabled == 1) {
     digitalWrite(SYSLED, LOW);
+    return;
+  }
+  //If a client is beign served, you can't send HTTP request
+  if (client2) {
     return;
   }
   digitalWrite(SYSLED, HIGH);
@@ -309,6 +319,10 @@ void readData() {
 
 //Logs data do Google Sheets
 void sendData() {
+  if (client2) {
+    Serial.println(F("Aborted logging, need to serve client"));
+    return;
+  }
   lcd.setCursor(4, 3);
   //Serial.print(F("connecting to "));
   //Serial.println(host);
@@ -325,7 +339,7 @@ void sendData() {
   }
 
   readData();
-  String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum;
+  String url = "/macros/s/" + GAS_ID + "/exec?temp=" + temp + "&hum=" + hum;
 
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
@@ -376,6 +390,10 @@ void logData() {
    This functions allows me to upload to Google Sheets data that had only been logged to the SD card due to a lack of connection
 */
 void recovery() {
+  if (client2) {
+    Serial.println(F("Aborted recovery, need to serve client"));
+    return;
+  }
   File myFile;
   myFile = SD.open("LOG.TXT");
   if (myFile) {
@@ -383,8 +401,7 @@ void recovery() {
     // read from the file until there's nothing else in it:
     while (myFile.available()) {
       String date = myFile.readStringUntil(' ');
-      date.replace("\n", ""); //Removes newlines
-      date.replace("\r", "");
+
       String temp = myFile.readStringUntil(' ');
       String hum = myFile.readStringUntil(' ');
 
@@ -395,7 +412,9 @@ void recovery() {
         return;
       }
       Serial.println(F("Recovering Line..."));
-      String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum + "&date=" + date;
+      String url = "/macros/s/" + GAS_ID + "/exec?temp=" + temp + "&hum=" + hum + "&date=" + date;
+      url.replace("\n", ""); //Removes newlines
+      url.replace("\r", "");
       Serial.print(F("requesting URL: "));
       Serial.println(url);
 
