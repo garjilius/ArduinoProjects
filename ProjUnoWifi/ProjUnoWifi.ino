@@ -143,6 +143,7 @@ void loop() {
             date[5] = readString.substring(31, 33).toInt(); //secondo
             // seconds, minutes, hours, day of the week, day of the month, month, year
             myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
+            currentDay = myRTC.dayofmonth;
           }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
@@ -233,7 +234,6 @@ void sendSensor() {
 
 void setup() {
   Serial.begin(9600);
-  currentDay = myRTC.dayofmonth;
   pinMode(SYSLED, OUTPUT);
   pinMode(WIFILED, OUTPUT);
   pinMode(DHTPIN, INPUT);
@@ -261,6 +261,7 @@ void setup() {
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
   myRTC.setDS1302Time(00, 28, 19, 3, 23, 10, 2019);
+  currentDay = myRTC.dayofmonth;
 
 
   String fv = WiFi.firmwareVersion();
@@ -314,11 +315,11 @@ void sendData() {
   if (!client.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
     lcd.print(F("CLOUD ERR"));
+    logData();
     if (needRecovery != 1) {
       needRecovery = 1;
       EEPROM.write(0, needRecovery);
       //Log data su SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
-      logData();
     }
     return;
   }
@@ -387,35 +388,35 @@ void recovery() {
       String temp = myFile.readStringUntil(' ');
       String hum = myFile.readStringUntil(' ');
 
-        if (!client.connect(host, httpsPort)) {
-          Serial.println(F("Recovery failed"));
+      if (!client.connect(host, httpsPort)) {
+        Serial.println(F("Recovery failed"));
+        lcdClearLine(3);
+        lcd.print(F("Recovery FAILED"));
+        return;
+      }
+      Serial.println(F("Recovering Line..."));
+      String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum + "&date=" + date;
+      Serial.print(F("requesting URL: "));
+      Serial.println(url);
+
+      client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+                   "Host: " + host + "\r\n" +
+                   "User-Agent: BuildFailureDetectorESP8266\r\n" +
+                   "Connection: close\r\n\r\n");
+
+      while (client.available()) {
+        char c = client.read();
+        Serial.print(c);
+      }
+      while (client.connected()) {
+        String line = client.readStringUntil('\n');
+        if (line == "\r") {
+          Serial.println(F("Line recovered"));
           lcdClearLine(3);
-          lcd.print(F("Recovery FAILED"));
-          return;
+          lcd.print(F("Recovery SUCCESS"));
+          break;
         }
-        Serial.println(F("Recovering Line..."));
-        String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + temp + "&humidity=" + hum + "&date=" + date;
-        Serial.print(F("requesting URL: "));
-        Serial.println(url);
-
-        client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                     "Host: " + host + "\r\n" +
-                     "User-Agent: BuildFailureDetectorESP8266\r\n" +
-                     "Connection: close\r\n\r\n");
-
-        while (client.available()) {
-          char c = client.read();
-          Serial.print(c);
-        }
-        while (client.connected()) {
-          String line = client.readStringUntil('\n');
-          if (line == "\r") {
-            Serial.println(F("Line recovered"));
-            lcdClearLine(3);
-            lcd.print(F("Recovery SUCCESS"));
-            break;
-          }
-        }
+      }
     }
     myFile.close();
     deleteSDLog();
