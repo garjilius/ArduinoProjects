@@ -280,7 +280,7 @@ void setup() {
   pinMode(SYSLED, OUTPUT);
   pinMode(WIFILED, OUTPUT);
   pinMode(DHTPIN, INPUT);
-  pinMode(PINBUTTON, INPUT);
+//  pinMode(PINBUTTON, INPUT);
   pinMode(IRPIN, INPUT);
   WiFi.setTimeout(30000);
   dht.begin();
