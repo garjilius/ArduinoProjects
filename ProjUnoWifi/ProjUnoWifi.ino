@@ -75,11 +75,10 @@ BLYNK_CONNECTED() {
 }
 
 void loop() {
-  Serial.println("WORKING...");
+  //Serial.println("WORKING...");
   Blynk.run();
   timer.run();
   myRTC.updateTime();
-  terminal.flush();
 
   //Retries to open SD if failed
   if (!sdOK) {
@@ -403,7 +402,7 @@ void recovery() {
       String date = myFile.readStringUntil(' ');
 
       String temp = myFile.readStringUntil(' ');
-      String hum = myFile.readStringUntil(' ');
+      String hum = myFile.readStringUntil('\r');
 
       if (!client.connect(host, httpsPort)) {
         Serial.println(F("Recovery failed"));
@@ -412,6 +411,7 @@ void recovery() {
         return;
       }
       Serial.println(F("Recovering Line..."));
+      Serial.println(hum);
       String url = "/macros/s/" + GAS_ID + "/exec?temp=" + temp + "&hum=" + hum + "&date=" + date;
       url.replace("\n", ""); //Removes newlines
       url.replace("\r", "");
@@ -529,6 +529,7 @@ void checkWifi() {
     lcdClearLine(1);
     WiFi.begin(ssid, pass);
     Blynk.connect(10000);
+    server.begin();
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));
