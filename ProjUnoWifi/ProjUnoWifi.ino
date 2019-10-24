@@ -41,7 +41,6 @@ float temp;
 int humLimit = 75;
 int tempLimit = 25;
 int timerGoogle;
-int timerSD;
 bool sdOK = false;
 long int logInterval = 300000L;
 byte needRecovery = 0;
@@ -149,7 +148,6 @@ void loop() {
             recoveryManager();
           }
           if (readString.indexOf("?logNow") > 0) {
-            logData();
             sendData();
           }
           if (readString.indexOf("?reset") > 0) {
@@ -170,7 +168,6 @@ void loop() {
             timer.deleteTimer(timerGoogle);
             timer.deleteTimer(timerSD);
             timerGoogle = timer.setInterval(logInterval, sendData);
-            timerSD = timer.setInterval(logInterval, logData);
             Serial.print(F("Log Interval set to: "));
             Serial.println(logInterval);
           }
@@ -282,13 +279,11 @@ void setup() {
   printWifiData();
 
   //First logging happens 30s after boot, regardless of logging interval settings
-  timer.setTimeout(30000, logData);
   timer.setTimeout(30000, sendData);
 
   //Sets run frequency for used functions
   timer.setInterval(1000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
-  timerSD = timer.setInterval(logInterval, logData);
   timer.setInterval(15000, handleDisplay);
   timer.setInterval(20000, checkWifi);
   timer.setInterval(1800000L, handleReports);
@@ -315,15 +310,6 @@ void readData() {
 //Logs data do Google Sheets
 void sendData() {
   lcd.setCursor(4, 3);
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println(F("No Connection"));
-    if (needRecovery != 1) {
-      needRecovery = 1;
-      //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
-      EEPROM.write(0, needRecovery);
-    }
-    return;
-  }
   //Serial.print(F("connecting to "));
   //Serial.println(host);
   if (!client.connect(host, httpsPort)) {
@@ -332,6 +318,8 @@ void sendData() {
     if (needRecovery != 1) {
       needRecovery = 1;
       EEPROM.write(0, needRecovery);
+      //Log data su SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
+      logData();
     }
     return;
   }
@@ -363,8 +351,6 @@ void logData() {
   dataString += temp;
   dataString += " ";
   dataString += hum;
-  dataString += " ";
-  dataString += needRecovery;
 
   File dataFile = SD.open("log.txt", FILE_WRITE);
   lcd.setCursor(14, 3);
@@ -401,10 +387,7 @@ void recovery() {
       date.replace("\r", "");
       String temp = myFile.readStringUntil(' ');
       String hum = myFile.readStringUntil(' ');
-      String needRecovery = myFile.readStringUntil('\r');
-      int toRecover = needRecovery.toInt();
 
-      if (toRecover == 1) {
         if (!client.connect(host, httpsPort)) {
           Serial.println(F("Recovery failed"));
           lcdClearLine(3);
@@ -434,7 +417,6 @@ void recovery() {
             break;
           }
         }
-      }
     }
     myFile.close();
     deleteSDLog();
