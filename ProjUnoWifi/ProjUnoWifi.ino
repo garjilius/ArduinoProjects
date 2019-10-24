@@ -46,7 +46,7 @@ bool sdOK = false;
 long int logInterval = 300000L;
 byte needRecovery = 0;
 //Token Blynk
-char auth[] = "cYc4mGATJA7eiiACUErh33-J6OMEYoKY";
+char auth[] = "QGJM5LWaUibrTKblRJ-EGO3dllEngTD1";
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
@@ -91,12 +91,12 @@ void loop() {
   }
 
   //SERVER!
-  WiFiClient client = server.available();   // listen for incoming clients
+  WiFiClient client2 = server.available();   // listen for incoming clients
 
-  if (client) {
-    while (client.connected()) {
-      if (client.available()) {
-        char c = client.read();
+  if (client2) {
+    while (client2.connected()) {
+      if (client2.available()) {
+        char c = client2.read();
 
         //Read HTTP Characters
         if (readString.length() < 100) {
@@ -105,47 +105,47 @@ void loop() {
         }
         //If HTTP Request is successful
         if (c == '\n') {
-          client.println(F("HTTP/1.1 200 OK"));
-          client.println(F("Content-Type: text/html"));
-          client.println();
-          client.println(F("<HTML>"));
-          client.println(F("<HEAD>"));
-          client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
-          client.println(F("<script type=\"text/javascript\" src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jstime.js?dl=00\"></script>"));
-          client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
-          client.println(F("</HEAD>"));
-          client.println(F("<BODY>"));
-          client.println(F("<H1>Arduino Control Panel</H1>"));
-          client.println(F("<hr/>"));
-          client.println(F("<H2>Welcome, Emanuele</H2>"));
-          client.println(F("<br/>"));
-          client.println(F("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" style=\"width:200px;height:200px;\">"));
-          client.println(F("<br/><br/><br/>"));
-          client.println(F("<a href=\"/?deleteSD\"\">Delete SD Logs</a>"));
-          client.println(F("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>"));          //Reset Google Sheets log
-          client.println(F("<a href=\"/?recovery\"\">Recovery</a><br/>"));    //Start Recovery
-          client.println(F("<br/>"));
-          client.println(F("<a href=\"/?logNow\"\">Log Now!</a>")); //Log to both SD and Google Sheets
-          client.println(F("<a href=\"/?sendReport\"\">Send Report!</a>")); //Log to both SD and Google Sheets
-          client.println(F("<br/><br/>"));
-          client.println(F("<a href=\"/?\"\">Reload Page</a><br/>"));
-          client.println(F("<br/>"));
-          client.println(F("<button class=\"button button2\"onclick=\"getTime()\">Set Time</button>"));
-          client.println(F("<br/><br/>"));
-          client.println(F("<form action="">"));
-          client.println(F("Frequenza Logging (minuti)"));
+          client2.println(F("HTTP/1.1 200 OK"));
+          client2.println(F("Content-Type: text/html"));
+          client2.println();
+          client2.println(F("<HTML>"));
+          client2.println(F("<HEAD>"));
+          client2.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
+          client2.println(F("<script type=\"text/javascript\" src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jstime.js?dl=00\"></script>"));
+          client2.println(F("<TITLE>Arduino Control Panel</TITLE>"));
+          client2.println(F("</HEAD>"));
+          client2.println(F("<BODY>"));
+          client2.println(F("<H1>Arduino Control Panel</H1>"));
+          client2.println(F("<hr/>"));
+          client2.println(F("<H2>Welcome, Emanuele</H2>"));
+          client2.println(F("<br/>"));
+          client2.println(F("<img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" style=\"width:200px;height:200px;\">"));
+          client2.println(F("<br/><br/><br/>"));
+          client2.println(F("<a href=\"/?deleteSD\"\">Delete SD Logs</a>"));
+          client2.println(F("<a href=\"/?reset\"\">Delete Google Sheets Logs</a>"));          //Reset Google Sheets log
+          client2.println(F("<a href=\"/?recovery\"\">Recovery</a><br/>"));    //Start Recovery
+          client2.println(F("<br/>"));
+          client2.println(F("<a href=\"/?logNow\"\">Log Now!</a>")); //Log to both SD and Google Sheets
+          client2.println(F("<a href=\"/?sendReport\"\">Send Report!</a>")); //Log to both SD and Google Sheets
+          client2.println(F("<br/><br/>"));
+          client2.println(F("<a href=\"/?\"\">Reload Page</a><br/>"));
+          client2.println(F("<br/>"));
+          client2.println(F("<button class=\"button button2\"onclick=\"getTime()\">Set Time</button>"));
+          client2.println(F("<br/><br/>"));
+          client2.println(F("<form action="">"));
+          client2.println(F("Frequenza Logging (minuti)"));
           int minInterval = logInterval / 60;
           minInterval = minInterval / 1000;
           String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
           interval += minInterval;
           interval += ">";
-          client.println(interval);
-          client.println(F("<input type=\"submit\" class=\"button button1\">"));
-          client.println(F("<div id='leg'></div>"));
-          client.println(F("</BODY>"));
-          client.println(F("</HTML>"));
+          client2.println(interval);
+          client2.println(F("<input type=\"submit\" class=\"button button1\">"));
+          client2.println(F("<div id='leg'></div>"));
+          client2.println(F("</BODY>"));
+          client2.println(F("</HTML>"));
 
-          client.stop();
+          client2.stop();
           //E' stata settata una data
           if (readString.indexOf("?date") > 0) {
             //giorno-mese-anno-ora-minuto-secondo
