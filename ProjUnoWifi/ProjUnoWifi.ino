@@ -184,7 +184,7 @@ void sendSensor() {
   /*if (client) {
     Serial.println(F("Aborted sendSensor, need to serve client"));
     return;
-  } */
+    } */
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
 
@@ -194,9 +194,9 @@ void sendSensor() {
     return;
   }
   //If a client is beign served, you can't send HTTP request
- /* if (client) {
-    return;
-  } */
+  /* if (client) {
+     return;
+    } */
   digitalWrite(SYSLED, HIGH);
 
   //Handle sensors' notifications
@@ -321,7 +321,7 @@ void sendData() {
   /*if (client) {
     Serial.println(F("Aborted logging, need to serve client"));
     return;
-  } */
+    } */
   lcd.setCursor(4, 3);
   //Serial.print(F("connecting to "));
   //Serial.println(host);
@@ -341,9 +341,9 @@ void sendData() {
   String url = "/macros/s/" + GAS_ID + "/exec?temp=" + temp + "&hum=" + hum;
 
   clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" +
-               "User-Agent: BuildFailureDetectorESP8266\r\n" +
-               "Connection: close\r\n\r\n");
+                "Host: " + host + "\r\n" +
+                "User-Agent: BuildFailureDetectorESP8266\r\n" +
+                "Connection: close\r\n\r\n");
 
   while (clientG.connected()) {
     String line = clientG.readStringUntil('\n');
@@ -412,9 +412,9 @@ void recovery() {
       Serial.println(url);
 
       clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                   "Host: " + host + "\r\n" +
-                   "User-Agent: BuildFailureDetectorESP8266\r\n" +
-                   "Connection: close\r\n\r\n");
+                    "Host: " + host + "\r\n" +
+                    "User-Agent: BuildFailureDetectorESP8266\r\n" +
+                    "Connection: close\r\n\r\n");
 
       while (clientG.available()) {
         char c = clientG.read();
@@ -549,9 +549,9 @@ void resetSheets() {
   String url = "/macros/s/" + GAS_ID + "/exec?reset=1";
 
   clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" +
-               "User-Agent: BuildFailureDetectorESP8266\r\n" +
-               "Connection: close\r\n\r\n");
+                "Host: " + host + "\r\n" +
+                "User-Agent: BuildFailureDetectorESP8266\r\n" +
+                "Connection: close\r\n\r\n");
 
   while (clientG.connected()) {
     String line = clientG.readStringUntil('\n');
@@ -660,15 +660,15 @@ void handleReports() {
 */
 
 
+/*
 void debugSystem() {
- /* terminal.println(F("------"));
+  terminal.println(F("------"));
   terminal.print(printTime());
   terminal.print(" - ");
   terminal.println(millis());
-  
-    terminal.print(F("SD OK: "));
-    terminal.println(sdOK);
-    terminal.print(F("Need Recovery: "));
-    terminal.println(needRecovery);
-  */
+  terminal.print(F("SD OK: "));
+  terminal.println(sdOK);
+  terminal.print(F("Need Recovery: "));
+  terminal.println(needRecovery);
 }
+*/
