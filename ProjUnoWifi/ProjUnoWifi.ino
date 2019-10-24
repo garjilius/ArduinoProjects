@@ -311,7 +311,7 @@ void setup() {
   timer.setInterval(5000, checkWifi);
   timer.setInterval(1800000L, handleReports);
   timerMovement = timer.setInterval(5000, detectMovement);
-  timer.setInterval(5000, debugSystem);
+  timer.setInterval(30000, debugSystem);
 }
 
 //Reads data from DHT sensor
@@ -375,25 +375,28 @@ void logData() {
   dataString += temp;
   dataString += " ";
   dataString += hum;
-  dataString += " ";
-  dataString += needRecovery;
+  //dataString += " ";
+ // dataString += needRecovery;
 
-  File dataFile = SD.open("log.txt", FILE_WRITE);
-  lcd.setCursor(14, 3);
-  // if the file is available, write to it:
-  if (dataFile) {
-    dataFile.println(dataString);
-    dataFile.close();
-    // print to the serial port too:
-    Serial.print(F("LoggedToSD: "));
-    Serial.println(dataString);
-    lcd.print("SD OK");
-  }
-  // if the file isn't open, pop up an error:
-  else {
-    Serial.println(F("error opening log file"));
-    lcd.print(F("SD ERR"));
-    sdOK = false;
+//Modifica fatta per loggare su SD solo se non va a buon fine il log su google
+  if (needRecovery == 1) {
+    File dataFile = SD.open("log.txt", FILE_WRITE);
+    lcd.setCursor(14, 3);
+    // if the file is available, write to it:
+    if (dataFile) {
+      dataFile.println(dataString);
+      dataFile.close();
+      // print to the serial port too:
+      Serial.print(F("LoggedToSD: "));
+      Serial.println(dataString);
+      lcd.print("SD OK");
+    }
+    // if the file isn't open, pop up an error:
+    else {
+      Serial.println(F("error opening log file"));
+      lcd.print(F("SD ERR"));
+      sdOK = false;
+    }
   }
 }
 
@@ -414,9 +417,9 @@ void recovery() {
       String temp = myFile.readStringUntil(' ');
       String hum = myFile.readStringUntil(' ');
       String needRecovery = myFile.readStringUntil('\r');
-      int toRecover = needRecovery.toInt();
+   //   int toRecover = needRecovery.toInt();
 
-      if (toRecover == 1) {
+    //  if (toRecover == 1) {
         if (!client.connect(host, httpsPort)) {
           Serial.println(F("Recovery failed"));
           lcdClearLine(3);
@@ -446,7 +449,7 @@ void recovery() {
             break;
           }
         }
-      }
+    //  }
     }
     myFile.close();
     deleteSDLog();
@@ -537,8 +540,11 @@ void checkWifi() {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
     lcdClearLine(1);
+    terminal.println("WIFI ERROR");
     WiFi.begin(ssid, pass);
     Blynk.connect(10000);
+    delay(5000);
+    //server.begin(); //SERVE??
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));

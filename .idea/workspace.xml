@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="7fc40ca1-4815-4eae-9771-36dd811d7d47" name="Default Changelist" comment="" />
+    <list default="true" id="7fc40ca1-4815-4eae-9771-36dd811d7d47" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/ProjUnoWifi/ProjUnoWifi.ino" beforeDir="false" afterPath="$PROJECT_DIR$/ProjUnoWifi/ProjUnoWifi.ino" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,6 +45,7 @@
       <option name="presentableId" value="Default" />
       <updated>1571769268138</updated>
       <workItem from="1571769270690" duration="212000" />
+      <workItem from="1571873000906" duration="303000" />
     </task>
     <servers />
   </component>
@@ -54,7 +57,9 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
           </value>
         </entry>
       </map>
