@@ -80,7 +80,6 @@ void loop() {
   timer.run();
   myRTC.updateTime();
   terminal.flush();
-  Serial.println(WiFi.status()==WL_CONNECTED);
  /* wifiButton = digitalRead(PINBUTTON);
   if (wifiButton == HIGH && previous == LOW) {
     if (WiFi.status() == WL_CONNECTED) {
