@@ -26,14 +26,13 @@ hd44780_I2Cexp lcd;
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
-WiFiSSLClient client;
+WiFiSSLClient clientG;
 WiFiServer server(80);
 
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
 WidgetTerminal terminal(V1);
 
-int status = WL_IDLE_STATUS;
 String readString;
 const int chipSelect = 8;
 int hum;
@@ -182,10 +181,10 @@ void loop() {
 
 void sendSensor() {
   readData();
-  if (client) {
+  /*if (client) {
     Serial.println(F("Aborted sendSensor, need to serve client"));
     return;
-  }
+  } */
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
 
@@ -195,9 +194,9 @@ void sendSensor() {
     return;
   }
   //If a client is beign served, you can't send HTTP request
-  if (client) {
+ /* if (client) {
     return;
-  }
+  } */
   digitalWrite(SYSLED, HIGH);
 
   //Handle sensors' notifications
@@ -319,14 +318,14 @@ void readData() {
 
 //Logs data do Google Sheets
 void sendData() {
-  if (client) {
+  /*if (client) {
     Serial.println(F("Aborted logging, need to serve client"));
     return;
-  }
+  } */
   lcd.setCursor(4, 3);
   //Serial.print(F("connecting to "));
   //Serial.println(host);
-  if (!client.connect(host, httpsPort)) {
+  if (!clientG.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
     lcd.print(F("CLOUD ERR"));
     logData();
@@ -341,13 +340,13 @@ void sendData() {
   readData();
   String url = "/macros/s/" + GAS_ID + "/exec?temp=" + temp + "&hum=" + hum;
 
-  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+  clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
                "User-Agent: BuildFailureDetectorESP8266\r\n" +
                "Connection: close\r\n\r\n");
 
-  while (client.connected()) {
-    String line = client.readStringUntil('\n');
+  while (clientG.connected()) {
+    String line = clientG.readStringUntil('\n');
     if (line == "\r") {
       Serial.println(F("Logged to Google Sheets"));
       lcd.print(F("CLOUD OK"));
@@ -398,9 +397,8 @@ void recovery() {
       String dateS = myFile.readStringUntil(' ');
       String tempS = myFile.readStringUntil(' ');
       String humS = myFile.readStringUntil('\n');
-      String needRecovery = myFile.readStringUntil('\r');
 
-      if (!client.connect(host, httpsPort)) {
+      if (!clientG.connect(host, httpsPort)) {
         Serial.println(F("Recovery failed"));
         lcdClearLine(3);
         lcd.print(F("Recovery FAILED"));
@@ -413,20 +411,18 @@ void recovery() {
       Serial.print(F("requesting URL: "));
       Serial.println(url);
 
-      client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+      clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
                    "Host: " + host + "\r\n" +
                    "User-Agent: BuildFailureDetectorESP8266\r\n" +
                    "Connection: close\r\n\r\n");
 
-
-
-      while (client.available()) {
-        char c = client.read();
+      while (clientG.available()) {
+        char c = clientG.read();
         Serial.print(c);
       }
-      while (client.connected()) {
-        //String line = client.readStringUntil('\n');
-        Serial.println(line);
+      while (clientG.connected()) {
+        String line = clientG.readStringUntil('\n');
+        //Serial.println(line);
         if (line == "\r") {
           Serial.println(F("Line recovered"));
           lcdClearLine(3);
@@ -544,7 +540,7 @@ void recoveryManager() {
 //Delete all lines in Google Sheets Log
 void resetSheets() {
   lcdClearLine(3);
-  if (!client.connect(host, httpsPort)) {
+  if (!clientG.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
     lcd.setCursor(4, 3);
     lcd.print(F("CLOUD RESET FAIL"));
@@ -552,13 +548,13 @@ void resetSheets() {
   }
   String url = "/macros/s/" + GAS_ID + "/exec?reset=1";
 
-  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+  clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
                "User-Agent: BuildFailureDetectorESP8266\r\n" +
                "Connection: close\r\n\r\n");
 
-  while (client.connected()) {
-    String line = client.readStringUntil('\n');
+  while (clientG.connected()) {
+    String line = clientG.readStringUntil('\n');
     if (line == "\r") {
       Serial.println(F("Google Sheets Reset: SUCCESS"));
       lcd.setCursor(4, 3);
@@ -665,11 +661,11 @@ void handleReports() {
 
 
 void debugSystem() {
-  terminal.println(F("------"));
+ /* terminal.println(F("------"));
   terminal.print(printTime());
   terminal.print(" - ");
   terminal.println(millis());
-  /*
+  
     terminal.print(F("SD OK: "));
     terminal.println(sdOK);
     terminal.print(F("Need Recovery: "));
