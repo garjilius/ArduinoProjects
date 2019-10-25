@@ -26,7 +26,6 @@ hd44780_I2Cexp lcd;
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
-WiFiSSLClient clientG;
 WiFiSSLClient client;
 WiFiServer server(80);
 
