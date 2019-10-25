@@ -12,6 +12,7 @@
 #define DHTPIN 2
 #define IRPIN 9
 #define WIFILED 3
+#define SDLED 4
 
 hd44780_I2Cexp lcd;
 
@@ -71,10 +72,13 @@ void loop() {
   timer.run();
   myRTC.updateTime();
 
-  //Retries to open SD if failed
+  //Retries to open SD if failed.
+    //If SD is not working, sd led comes up, then it is turned off again if SD starts working
   if (!sdOK) {
+    digitalWrite(SDLED, HIGH);  // indicate via LED
     if (sdOK = SD.begin(chipSelect)) {
       Serial.println(F("SD INITIALIZED"));
+      digitalWrite(SDLED, LOW);  // indicate via LED
     }
     else {
       Serial.println(F("SD NOT WORKING!"));
@@ -227,7 +231,7 @@ void sendSensor() {
 
 void setup() {
   Serial.begin(9600);
-  pinMode(SYSLED, OUTPUT);
+  pinMode(SDLED, OUTPUT);
   pinMode(WIFILED, OUTPUT);
   pinMode(DHTPIN, INPUT);
   pinMode(IRPIN, INPUT);
@@ -342,7 +346,7 @@ void logData() {
 
   File dataFile = SD.open("log.txt", FILE_WRITE);
   //30000 bytes are approx 1000 lines
-  if(dataFile.size() > 30000) {
+  if (dataFile.size() > 30000) {
     deleteSDLog();
     dataFile = SD.open("log.txt", FILE_WRITE);
   }
