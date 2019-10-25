@@ -11,7 +11,6 @@
 
 #define DHTPIN 2
 #define IRPIN 9
-#define SYSLED 4
 #define WIFILED 3
 
 hd44780_I2Cexp lcd;
@@ -235,10 +234,10 @@ void setup() {
   WiFi.setTimeout(60000);
   dht.begin();
   server.begin();   // start the web server on port 80
-  //Inizializzo il Display
+  //Display Initialization
   lcd.begin(20, 4);
-  //Inizializzo la SD
   lcd.setCursor(7, 2);
+  //SD Initialization
   sdOK = SD.begin(chipSelect);
   if (!sdOK) {
     //Commented out as it will be printed in the loop function
@@ -257,6 +256,7 @@ void setup() {
   myRTC.setDS1302Time(00, 00, 19, 5, 25, 10, 2019);
   currentDay = myRTC.dayofmonth;
 
+  //Reads from eeprom if there's need for recovery or not
   EEPROM.get(0, needRecovery);
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
     Serial.println(F("Need recovery"));
@@ -314,7 +314,6 @@ void sendData() {
     }
     return;
   }
-
   readData();
   String url = "/macros/s/" + GAS_ID + "/exec?temp=" + temp + "&hum=" + hum;
 
@@ -430,8 +429,8 @@ BLYNK_WRITE(V2)  {
   humLimit = param.asFloat();
 }
 
+// print your board's IP address:
 void printWifiData() {
-  // print your board's IP address:
   Serial.println(WiFi.localIP());
 }
 
@@ -460,7 +459,7 @@ String printDate() {
   return orario;
 }
 
-
+//Handles info on the i2c display
 void handleDisplay() {
   lcd.setCursor(0, 0);
   lcd.print(printTime());
@@ -478,7 +477,7 @@ void handleDisplay() {
   } else {
     lcd.print(F(" - SD OK"));
   }
-    lcd.setCursor(0, 3);
+  lcd.setCursor(0, 3);
   lcd.print(F("Log:"));
 }
 
@@ -486,7 +485,6 @@ void handleDisplay() {
 void checkWifi() {
   lcd.setCursor(0, 2);
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Wifi down hehehe");
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
     lcdClearLine(1);
@@ -533,7 +531,6 @@ void resetSheets() {
 
 //Delete all lines in SD Log
 void deleteSDLog() {
-  lcdClearLine(3);
   lcd.setCursor(4, 3);
   bool fileRemoved = SD.remove("LOG.TXT");
   if (fileRemoved) {
@@ -584,15 +581,6 @@ void resetStats() {
   numMov = 0;
 }
 
-//If the date has changed, returns true and uptates currentDay
-bool dateChanged() {
-  //If date changed
-  if (currentDay != myRTC.dayofmonth) {
-    currentDay = myRTC.dayofmonth;
-    return true;
-  }
-  return false;
-}
 
 //Sends the report mail using Blynk. Body+Subject+emailaddress must be <140 Char
 void sendReport() {
@@ -611,8 +599,18 @@ void sendReport() {
   resetStats();
 }
 
+//If the date has changed, returns true and uptates currentDay
+bool dateChanged() {
+  //If date changed
+  if (currentDay != myRTC.dayofmonth) {
+    currentDay = myRTC.dayofmonth;
+    return true;
+  }
+  return false;
+}
 
-/*checks if the data has changed and if it has, sends a report.
+
+/*checks if the date has changed and if it has, sends a report.
   It's handy having a separate function to do it because it can be called repeatedly in a timer
 */
 void handleReports() {
