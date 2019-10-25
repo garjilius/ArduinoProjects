@@ -72,26 +72,25 @@ BLYNK_CONNECTED() {
 }
 
 void loop() {
-  //Serial.println("WORKING...");
   Blynk.run();
   timer.run();
   myRTC.updateTime();
-  // server.begin();
 
   //Retries to open SD if failed
   if (!sdOK) {
     if (sdOK = SD.begin(chipSelect)) {
       Serial.println(F("SD INITIALIZED"));
     }
-    else
+    else {
       Serial.println(F("SD NOT WORKING!"));
+    }
   }
 
   //SERVER!
   WiFiClient client = server.available();   // listen for incoming clients
 
   if (client) {
-    Serial.println("new client");
+    //Serial.println("new client");
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
@@ -99,16 +98,15 @@ void loop() {
         //Read HTTP Characters
         if (readString.length() < 100) {
           readString += c;
-          //Serial.print(c);
         }
         //If HTTP Request is successful
         if (c == '\n') {
           client.println(F("HTTP/1.1 200 OK"));
           client.println(F("Content-Type: text/html"));
-          client.println("Connection: close");  // the connection will be closed after completion of the response
+          client.println(F("Connection: close"));  // the connection will be closed after completion of the response
           //client.println("Refresh: 5");  // refresh the page automatically every 5 sec
           client.println();
-          client.println("<!DOCTYPE HTML>");
+          client.println(F("<!DOCTYPE HTML>"));
           client.println(F("<HTML>"));
           client.println(F("<HEAD>"));
           client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
@@ -133,7 +131,7 @@ void loop() {
           // give the web browser time to receive the data
           delay(50);
           client.stop();
-          Serial.println("client disonnected");
+          //Serial.println("client disonnected");
           //E' stata settata una data
           if (readString.indexOf("?date") > 0) {
             //giorno-mese-anno-ora-minuto-secondo
@@ -148,7 +146,7 @@ void loop() {
             // seconds, minutes, hours, day of the week, day of the month, month, year
             myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
             currentDay = myRTC.dayofmonth;
-            Serial.print(F("Time Set"));
+            Serial.println(F("Time Set"));
           }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
@@ -167,9 +165,8 @@ void loop() {
             sendReport();
           }
           if (readString.indexOf("?logInterval") > 0) {
-            int startIndex = readString.indexOf("=") + 1 ;
-            int endIndex = readString.indexOf("HTTP") - 1;
-            int minInterval = readString.substring(startIndex, endIndex).toInt();
+            //Getting the useful data between startindex and endindex using indexOf
+            int minInterval = readString.substring(readString.indexOf("=") + 1, readString.indexOf("HTTP") - 1).toInt();
             logInterval = 60L * 1000L * minInterval; //Force value to Long
             timer.deleteTimer(timerGoogle);
             timerGoogle = timer.setInterval(logInterval, sendData);
@@ -225,15 +222,13 @@ void sendSensor() {
     notificationAllowed[EVTEMP] = true;
   }
 
-  if (digitalRead(IRPIN) == HIGH) {
-    if (notificationAllowed[EVMOV] == true) {
-      notificationAllowed[EVMOV] = false;
-      timer.setTimeout(60000L, enableMovementNotification); //Re-Enables movement notification after one minute
-      numMov++;
-      String notifica = "Movement Detected - ";
-      notifica += printTime();
-      Blynk.notify(notifica);
-    }
+  if (digitalRead(IRPIN) == HIGH && notificationAllowed[EVMOV] == true) {
+    notificationAllowed[EVMOV] = false;
+    timer.setTimeout(60000L, enableMovementNotification); //Re-Enables movement notification after one minute
+    numMov++;
+    String notifica = "Movement Detected - ";
+    notifica += printTime();
+    Blynk.notify(notifica);
   }
 }
 
@@ -246,15 +241,14 @@ void setup() {
   WiFi.setTimeout(60000);
   dht.begin();
   server.begin();   // start the web server on port 80
-  //terminal.clear(); //Clear blynk terminal
   //Inizializzo il Display
   lcd.begin(20, 4);
-  lcd.setCursor(0, 0);
   //Inizializzo la SD
   lcd.setCursor(7, 2);
   sdOK = SD.begin(chipSelect);
   if (!sdOK) {
-    Serial.println(F("SD Card failed, or not present"));
+    //Commented out as it will be printed in the loop function
+    //Serial.println(F("SD Card failed"));
     lcd.print(F("- SD Err"));
   } else {
     Serial.println(F("SD Card initialized."));
@@ -269,21 +263,20 @@ void setup() {
   myRTC.setDS1302Time(00, 00, 19, 5, 25, 10, 2019);
   currentDay = myRTC.dayofmonth;
 
-
-  String fv = WiFi.firmwareVersion();
-  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-    Serial.print(F("Please upgrade the firmware. Installed: "));
-    Serial.println(fv);
-  }
-
-
   EEPROM.get(0, needRecovery);
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
     Serial.println(F("Need recovery"));
   }
 
-  checkWifi();
   printWifiData();
+
+  /*
+    String fv = WiFi.firmwareVersion();
+    if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
+    Serial.print(F("Please upgrade the firmware. Installed: "));
+    Serial.println(fv);
+    }
+  */
 
   //First logging happens 30s after boot, regardless of logging interval settings
   timer.setTimeout(30000, sendData);
@@ -296,7 +289,6 @@ void setup() {
   timer.setInterval(1800000L, handleReports);
   //timer.setInterval(5000, debugSystem);
 }
-
 
 //Re Enables movement notifications
 void enableMovementNotification() {
@@ -395,22 +387,16 @@ void recovery() {
         lcd.print(F("Recovery FAILED"));
         return;
       }
-      Serial.println(F("Recovering Line..."));
       String url = "/macros/s/" + GAS_ID + "/exec?temp=" + tempS + "&hum=" + humS + "&date=" + dateS;
       url.replace("\n", ""); //Removes newlines
       url.replace("\r", "");
-      Serial.print(F("requesting URL: "));
-      Serial.println(url);
+      Serial.println(F(url));
 
       client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                    "Host: " + host + "\r\n" +
                    "User-Agent: Arduino\r\n" +
                    "Connection: close\r\n\r\n");
 
-      while (client.available()) {
-        char c = client.read();
-        Serial.print(c);
-      }
       while (client.connected()) {
         String line = client.readStringUntil('\n');
         //Serial.println(line);
@@ -433,7 +419,6 @@ void recovery() {
     Serial.println(F("error opening log file"));
     lcd.print(F("Recovery FAILED"));
     sdOK = false;
-
   }
 }
 
@@ -452,9 +437,7 @@ BLYNK_WRITE(V2)  {
 
 void printWifiData() {
   // print your board's IP address:
-  IPAddress ip = WiFi.localIP();
-  Serial.print(F("IP: "));
-  Serial.println(ip);
+  Serial.println(WiFi.localIP());
 }
 
 
@@ -465,7 +448,6 @@ String printTime() {
   orario += myRTC.minutes;
   return orario;
 }
-
 
 String printDate() {
   String orario = "";
@@ -499,7 +481,7 @@ void handleDisplay() {
   lcd.print(F("Log:"));
   lcd.setCursor(7, 2);
   if (!sdOK) {
-    lcd.print(F("- SD Err"));
+    lcd.print(F(" - SD Err"));
   } else {
     lcd.print(F(" - SD OK"));
   }
@@ -531,9 +513,9 @@ void recoveryManager() {
 //Delete all lines in Google Sheets Log
 void resetSheets() {
   lcdClearLine(3);
+  lcd.setCursor(4, 3);
   if (!client.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
-    lcd.setCursor(4, 3);
     lcd.print(F("CLOUD RESET FAIL"));
     return;
   }
@@ -548,7 +530,6 @@ void resetSheets() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       Serial.println(F("Google Sheets Reset: SUCCESS"));
-      lcd.setCursor(4, 3);
       lcd.print(F("CLOUD RESET SUCCESS"));
       break;
     }
@@ -558,13 +539,12 @@ void resetSheets() {
 //Delete all lines in SD Log
 void deleteSDLog() {
   lcdClearLine(3);
+  lcd.setCursor(4, 3);
   bool fileRemoved = SD.remove("LOG.TXT");
   if (fileRemoved) {
-    lcd.setCursor(4, 3);
     lcd.print(F("SD RESET OK"));
     Serial.println(F("File removed"));
   } else {
-    lcd.setCursor(4, 3);
     lcd.print(F("SD RESET ERR"));
     Serial.println(F("Failed deleting file"));
     sdOK = false;
