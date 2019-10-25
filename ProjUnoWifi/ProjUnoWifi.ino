@@ -348,7 +348,7 @@ void logData() {
   dataString += hum;
 
   File dataFile = SD.open("log.txt", FILE_WRITE);
-  lcd.setCursor(14, 3);
+  lcd.setCursor(13, 3);
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.println(dataString);
@@ -356,7 +356,7 @@ void logData() {
     // print to the serial port too:
     Serial.print(F("LoggedToSD: "));
     Serial.println(dataString);
-    lcd.print("SD OK");
+    lcd.print(" SD OK");
   }
   // if the file isn't open, pop up an error:
   else {
@@ -475,14 +475,14 @@ void handleDisplay() {
   lcd.setCursor(0, 1);
   lcd.print(F("IP: "));
   lcd.print(WiFi.localIP());
-  lcd.setCursor(0, 3);
-  lcd.print(F("Log:"));
   lcd.setCursor(7, 2);
   if (!sdOK) {
     lcd.print(F(" - SD Err"));
   } else {
     lcd.print(F(" - SD OK"));
   }
+    lcd.setCursor(0, 3);
+  lcd.print(F("Log:"));
 }
 
 //If WIFI is not working, wifi led is switched off and we attempt to reconnect to wifi and to blynk servers
