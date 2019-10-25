@@ -1,5 +1,4 @@
 #include <DHT.h>
-#include <SPI.h>
 #include <BlynkSimpleWiFiNINA.h>
 #include <virtuabotixRTC.h>
 #include <Wire.h>
@@ -31,7 +30,7 @@ WiFiServer server(80);
 
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
-WidgetTerminal terminal(V1);
+//WidgetTerminal terminal(V1);
 
 String readString;
 const int chipSelect = 8;
@@ -81,8 +80,7 @@ void loop() {
 
   //Retries to open SD if failed
   if (!sdOK) {
-    sdOK = SD.begin(chipSelect);
-    if (sdOK) {
+    if (sdOK = SD.begin(chipSelect)) {
       Serial.println(F("SD INITIALIZED"));
     }
     else
@@ -150,7 +148,7 @@ void loop() {
             // seconds, minutes, hours, day of the week, day of the month, month, year
             myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
             currentDay = myRTC.dayofmonth;
-            Serial.println(F("Time Set"));
+            Serial.print(F("Time Set"));
           }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
@@ -248,7 +246,7 @@ void setup() {
   WiFi.setTimeout(60000);
   dht.begin();
   server.begin();   // start the web server on port 80
-  terminal.clear(); //Clear blynk terminal
+  //terminal.clear(); //Clear blynk terminal
   //Inizializzo il Display
   lcd.begin(20, 4);
   lcd.setCursor(0, 0);
@@ -281,19 +279,20 @@ void setup() {
 
   EEPROM.get(0, needRecovery);
   if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
-    Serial.println(F("Need recovery, Network Available"));
+    Serial.println(F("Need recovery"));
   }
 
+  checkWifi();
   printWifiData();
 
   //First logging happens 30s after boot, regardless of logging interval settings
   timer.setTimeout(30000, sendData);
 
   //Sets run frequency for used functions
-  timer.setInterval(1000, sendSensor);
+  timer.setInterval(3000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
   timer.setInterval(15000, handleDisplay);
-  timer.setInterval(30000, checkWifi);
+  timer.setInterval(60000, checkWifi);
   timer.setInterval(1800000L, handleReports);
   //timer.setInterval(5000, debugSystem);
 }
@@ -318,8 +317,6 @@ void readData() {
 //Logs data do Google Sheets
 void sendData() {
   lcd.setCursor(4, 3);
-  //Serial.print(F("connecting to "));
-  //Serial.println(host);
   if (!client.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
     lcd.print(F("CLOUD ERR"));
@@ -354,7 +351,6 @@ void sendData() {
 void logData() {
   String dataString;
   dataString += printDate(); //Andrà riattivato quando connetterò l'orologio
-  //dataString += "19/10/2019-22.10.00";
   dataString += " ";
   dataString += temp;
   dataString += " ";
