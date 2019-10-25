@@ -9,7 +9,6 @@
 #include <EEPROM.h>
 #include "arduino_secrets.h"
 
-//#define BLYNK_PRINT Serial
 #define DHTPIN 2
 #define IRPIN 9
 #define SYSLED 4
@@ -30,7 +29,6 @@ WiFiServer server(80);
 
 DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
-//WidgetTerminal terminal(V1);
 
 String readString;
 const int chipSelect = 8;
@@ -376,7 +374,6 @@ void logData() {
 void recovery() {
   File myFile = SD.open("LOG.TXT");
   if (myFile) {
-    // read from the file until there's nothing else in it:
     while (myFile.available()) {
       String dateS = myFile.readStringUntil(' ');
       String tempS = myFile.readStringUntil(' ');
@@ -491,6 +488,7 @@ void handleDisplay() {
 void checkWifi() {
   lcd.setCursor(0, 2);
   if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Wifi down hehehe");
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
     lcdClearLine(1);
@@ -623,20 +621,3 @@ void handleReports() {
   if (dateChanged())
     sendReport();
 }
-
-/*
-   Debugging to Blynk terminal is useful when Arduino is not connected to serial monitor,
-   and when we are far from its LCD display
-*/
-/*
-  void debugSystem() {
-  terminal.println(F("------"));
-  terminal.print(printTime());
-  terminal.print(" - ");
-  terminal.println(millis());
-  terminal.print(F("SD OK: "));
-  terminal.println(sdOK);
-  terminal.print(F("Need Recovery: "));
-  terminal.println(needRecovery);
-  }
-*/
