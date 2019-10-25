@@ -48,14 +48,12 @@ bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
-
 //Saving info used for recap email
 //Position 0: Min - position 1: Max
 int humStat[2] = {100, -100};
 float tempStat[2] = {100, -100};
 int numMov = 0;
 int currentDay = 0;
-
 
 //Google Sheets connection data
 const char* host = "script.google.com";
@@ -348,6 +346,11 @@ void logData() {
   dataString += hum;
 
   File dataFile = SD.open("log.txt", FILE_WRITE);
+  //30000 bytes are approx 1000 lines
+  if(dataFile.size() > 30000) {
+    deleteSDLog();
+    dataFile = SD.open("log.txt", FILE_WRITE);
+  }
   lcd.setCursor(13, 3);
   // if the file is available, write to it:
   if (dataFile) {
@@ -373,7 +376,6 @@ void logData() {
 void recovery() {
   File myFile = SD.open("LOG.TXT");
   if (myFile) {
-
     // read from the file until there's nothing else in it:
     while (myFile.available()) {
       String dateS = myFile.readStringUntil(' ');
