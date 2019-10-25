@@ -41,7 +41,7 @@ int humLimit = 75;
 int tempLimit = 25;
 int timerGoogle;
 bool sdOK = false;
-long int logInterval = 300000L;
+long int logInterval = 600000L;
 byte needRecovery = 0;
 //Token Blynk
 char auth[] = "QGJM5LWaUibrTKblRJ-EGO3dllEngTD1";
@@ -93,6 +93,7 @@ void loop() {
   WiFiClient client = server.available();   // listen for incoming clients
 
   if (client) {
+    Serial.println("new client");
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
@@ -106,7 +107,10 @@ void loop() {
         if (c == '\n') {
           client.println(F("HTTP/1.1 200 OK"));
           client.println(F("Content-Type: text/html"));
+          client.println("Connection: close");  // the connection will be closed after completion of the response
+          //client.println("Refresh: 5");  // refresh the page automatically every 5 sec
           client.println();
+          client.println("<!DOCTYPE HTML>");
           client.println(F("<HTML>"));
           client.println(F("<HEAD>"));
           client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
@@ -128,8 +132,10 @@ void loop() {
           client.println(F("<div id='leg'></div>"));
           client.println(F("</BODY>"));
           client.println(F("</HTML>"));
-
+          // give the web browser time to receive the data
+          delay(50);
           client.stop();
+          Serial.println("client disonnected");
           //E' stata settata una data
           if (readString.indexOf("?date") > 0) {
             //giorno-mese-anno-ora-minuto-secondo
@@ -342,7 +348,7 @@ void sendData() {
 
   clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
                 "Host: " + host + "\r\n" +
-                "User-Agent: BuildFailureDetectorESP8266\r\n" +
+                "User-Agent: Arduino\r\n" +
                 "Connection: close\r\n\r\n");
 
   while (clientG.connected()) {
@@ -413,7 +419,7 @@ void recovery() {
 
       clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
                     "Host: " + host + "\r\n" +
-                    "User-Agent: BuildFailureDetectorESP8266\r\n" +
+                    "User-Agent: Arduino\r\n" +
                     "Connection: close\r\n\r\n");
 
       while (clientG.available()) {
@@ -661,7 +667,7 @@ void handleReports() {
 
 
 /*
-void debugSystem() {
+  void debugSystem() {
   terminal.println(F("------"));
   terminal.print(printTime());
   terminal.print(" - ");
@@ -670,5 +676,5 @@ void debugSystem() {
   terminal.println(sdOK);
   terminal.print(F("Need Recovery: "));
   terminal.println(needRecovery);
-}
+  }
 */
