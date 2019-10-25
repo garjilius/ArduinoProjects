@@ -183,10 +183,8 @@ void sendSensor() {
 
   //Even if system is disabled, it stills sends sensor value to the app to update gauges
   if (systemDisabled == 1) {
-    digitalWrite(SYSLED, LOW);
     return;
   }
-  digitalWrite(SYSLED, HIGH);
 
   //Handle sensors' notifications
   if (hum > humLimit) {
