@@ -270,6 +270,10 @@ void setup() {
     Serial.println(F("SD Card initialized."));
     lcd.print(F(" - SD OK"));
   }
+  IPAddress ip(192, 168, 1, 200);
+  IPAddress gateway(192, 168, 1, 1);
+  IPAddress subnet(255, 255, 255, 0);
+  WiFi.config(ip, gateway, subnet);
   WiFi.begin(ssid, pass);
   Blynk.config(auth);
 
