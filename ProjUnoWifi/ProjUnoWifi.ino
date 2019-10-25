@@ -270,14 +270,9 @@ void setup() {
     Serial.println(F("SD Card initialized."));
     lcd.print(F(" - SD OK"));
   }
-  //Per rete di casa
   IPAddress ip(192, 168, 1, 200);
   IPAddress gateway(192, 168, 1, 1);
   IPAddress subnet(255, 255, 255, 0);
-  //Per HOTSPOT iPhone
-  /*IPAddress ip(172, 20, 10, 200);
-  IPAddress gateway(172, 20, 10, 1);
-  IPAddress subnet(255, 255, 255, 240); */
   WiFi.config(ip, gateway, subnet);
   WiFi.begin(ssid, pass);
   Blynk.config(auth);
