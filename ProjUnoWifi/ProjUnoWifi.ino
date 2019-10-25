@@ -27,6 +27,7 @@ hd44780_I2Cexp lcd;
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
 WiFiSSLClient clientG;
+WiFiSSLClient client;
 WiFiServer server(80);
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -270,16 +271,7 @@ void setup() {
     Serial.println(F("SD Card initialized."));
     lcd.print(F(" - SD OK"));
   }
-  IPAddress dns(8,8,8,8);
-  //Per rete di casa
-  IPAddress ip(192, 168, 1, 200);
-  IPAddress gateway(192, 168, 1, 1);
-  IPAddress subnet(255, 255, 255, 0);
-  //Per HOTSPOT iPhone
-  /*IPAddress ip(172, 20, 10, 200);
-  IPAddress gateway(172, 20, 10, 1);
-  IPAddress subnet(255, 255, 255, 240); */
-  WiFi.config(ip, dns, gateway, subnet);
+
   WiFi.begin(ssid, pass);
   Blynk.config(auth);
 
@@ -341,7 +333,7 @@ void sendData() {
   lcd.setCursor(4, 3);
   //Serial.print(F("connecting to "));
   //Serial.println(host);
-  if (!clientG.connect(host, httpsPort)) {
+  if (!client.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
     lcd.print(F("CLOUD ERR"));
     logData();
@@ -356,13 +348,13 @@ void sendData() {
   readData();
   String url = "/macros/s/" + GAS_ID + "/exec?temp=" + temp + "&hum=" + hum;
 
-  clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                "Host: " + host + "\r\n" +
-                "User-Agent: Arduino\r\n" +
-                "Connection: close\r\n\r\n");
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "User-Agent: Arduino\r\n" +
+               "Connection: close\r\n\r\n");
 
-  while (clientG.connected()) {
-    String line = clientG.readStringUntil('\n');
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
     if (line == "\r") {
       Serial.println(F("Logged to Google Sheets"));
       lcd.print(F("CLOUD OK"));
@@ -414,7 +406,7 @@ void recovery() {
       String tempS = myFile.readStringUntil(' ');
       String humS = myFile.readStringUntil('\n');
 
-      if (!clientG.connect(host, httpsPort)) {
+      if (!client.connect(host, httpsPort)) {
         Serial.println(F("Recovery failed"));
         lcdClearLine(3);
         lcd.print(F("Recovery FAILED"));
@@ -427,17 +419,17 @@ void recovery() {
       Serial.print(F("requesting URL: "));
       Serial.println(url);
 
-      clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                    "Host: " + host + "\r\n" +
-                    "User-Agent: Arduino\r\n" +
-                    "Connection: close\r\n\r\n");
+      client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+                   "Host: " + host + "\r\n" +
+                   "User-Agent: Arduino\r\n" +
+                   "Connection: close\r\n\r\n");
 
-      while (clientG.available()) {
-        char c = clientG.read();
+      while (client.available()) {
+        char c = client.read();
         Serial.print(c);
       }
-      while (clientG.connected()) {
-        String line = clientG.readStringUntil('\n');
+      while (client.connected()) {
+        String line = client.readStringUntil('\n');
         //Serial.println(line);
         if (line == "\r") {
           Serial.println(F("Line recovered"));
@@ -556,7 +548,7 @@ void recoveryManager() {
 //Delete all lines in Google Sheets Log
 void resetSheets() {
   lcdClearLine(3);
-  if (!clientG.connect(host, httpsPort)) {
+  if (!client.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
     lcd.setCursor(4, 3);
     lcd.print(F("CLOUD RESET FAIL"));
@@ -564,13 +556,13 @@ void resetSheets() {
   }
   String url = "/macros/s/" + GAS_ID + "/exec?reset=1";
 
-  clientG.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                "Host: " + host + "\r\n" +
-                "User-Agent: BuildFailureDetectorESP8266\r\n" +
-                "Connection: close\r\n\r\n");
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "User-Agent: BuildFailureDetectorESP8266\r\n" +
+               "Connection: close\r\n\r\n");
 
-  while (clientG.connected()) {
-    String line = clientG.readStringUntil('\n');
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
     if (line == "\r") {
       Serial.println(F("Google Sheets Reset: SUCCESS"));
       lcd.setCursor(4, 3);
