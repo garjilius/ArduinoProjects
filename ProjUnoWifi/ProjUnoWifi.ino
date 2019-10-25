@@ -187,10 +187,6 @@ void loop() {
 
 void sendSensor() {
   readData();
-  /*if (client) {
-    Serial.println(F("Aborted sendSensor, need to serve client"));
-    return;
-    } */
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
 
@@ -199,10 +195,6 @@ void sendSensor() {
     digitalWrite(SYSLED, LOW);
     return;
   }
-  //If a client is beign served, you can't send HTTP request
-  /* if (client) {
-     return;
-    } */
   digitalWrite(SYSLED, HIGH);
 
   //Handle sensors' notifications
@@ -276,7 +268,7 @@ void setup() {
 
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
-  myRTC.setDS1302Time(00, 28, 19, 3, 23, 10, 2019);
+  myRTC.setDS1302Time(00, 00, 19, 5, 25, 10, 2019);
   currentDay = myRTC.dayofmonth;
 
 
@@ -325,21 +317,17 @@ void readData() {
 
 //Logs data do Google Sheets
 void sendData() {
-  /*if (client) {
-    Serial.println(F("Aborted logging, need to serve client"));
-    return;
-    } */
   lcd.setCursor(4, 3);
   //Serial.print(F("connecting to "));
   //Serial.println(host);
   if (!client.connect(host, httpsPort)) {
     Serial.println(F("Connection failed"));
     lcd.print(F("CLOUD ERR"));
+    //Log data su SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
     logData();
     if (needRecovery != 1) {
       needRecovery = 1;
       EEPROM.write(0, needRecovery);
-      //Log data su SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
     }
     return;
   }
@@ -600,7 +588,6 @@ void lcdClearLine(int i) {
    explicitly requesting it via control panel and so on
 */
 
-
 //Keeps min and max temperature updated
 void manageStats(float temp, int hum) {
   if (temp < tempStat[0]) {
@@ -653,6 +640,7 @@ void sendReport() {
   resetStats();
 }
 
+
 /*checks if the data has changed and if it has, sends a report.
   It's handy having a separate function to do it because it can be called repeatedly in a timer
 */
@@ -665,8 +653,6 @@ void handleReports() {
    Debugging to Blynk terminal is useful when Arduino is not connected to serial monitor,
    and when we are far from its LCD display
 */
-
-
 /*
   void debugSystem() {
   terminal.println(F("------"));
