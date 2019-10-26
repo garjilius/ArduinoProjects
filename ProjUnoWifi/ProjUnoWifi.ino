@@ -448,10 +448,10 @@ void recovery() {
     if (SD.remove(myFile.name()))
       Serial.println("REMOVED OK");
     //If going backwards I haven't reached file n 0, I keep going backwards
+    needRecovery--;
     if (needRecovery > 0) {
       EEPROM.write(0, needRecovery);
       recovery();
-      needRecovery--;
     } else { //Ho finito il recovery di tutti i file
       Serial.println(F("Successful Recovery"));
     }
