@@ -266,7 +266,7 @@ void setup() {
   //Reads from eeprom if there's need for recovery or not
   EEPROM.get(0, needRecovery);
   if ((needRecovery > 0) && (WiFi.status() == WL_CONNECTED)) {
-    Serial.print(F("Need recovery"));
+    Serial.print(F("Need recovery: "));
     Serial.println(needRecovery);
   }
 
@@ -364,6 +364,9 @@ void logData() {
   }
 }
 
+//Gets the name of the right file to write:
+//If the current file was getting too big, creates the next one
+//If the file is just needed for reading, it returns the current file name
 String getLogFile(bool write) {
   if (write) {
     String file = String(needRecovery) += ".txt";
@@ -378,7 +381,7 @@ String getLogFile(bool write) {
   return String(needRecovery) += ".txt";
 }
 
-//Delete all lines in SD Log
+//Delete all SD Log files
 void deleteSDLog() {
   File root = SD.open("/");
   while (true) {
@@ -389,11 +392,13 @@ void deleteSDLog() {
     }
     entry.close();
     Serial.print(entry.name());
-    if(SD.remove(entry.name())) {
-       Serial.println("Removed");
-    } 
+    if (SD.remove(entry.name())) {
+      Serial.println(": removed");
+      needRecovery--;
+      EEPROM.write(0, needRecovery);
+    }
     else {
-      Serial.println(" ");
+      Serial.println(": not removed");
     }
   }
 }
@@ -403,8 +408,7 @@ void deleteSDLog() {
    This functions allows me to upload to Google Sheets data that had only been logged to the SD card due to a lack of connection
 */
 void recovery() {
-  File root = SD.open("/");
-  File myFile = root.openNextFile();
+  File myFile = SD.open(getLogFile(0));
   if (myFile) {
     while (myFile.available()) {
       String dateS = myFile.readStringUntil(' ');
@@ -437,7 +441,7 @@ void recovery() {
     }
     myFile.close();
     if (SD.remove(myFile.name()))
-      Serial.print("REMOVED OK");
+      Serial.println("REMOVED OK");
     //If going backwards I haven't reached file n 0, I keep going backwards
     if (needRecovery > 0) {
       needRecovery--;
