@@ -41,7 +41,7 @@ int humLimit = 75;
 int tempLimit = 25;
 int timerGoogle;
 bool sdOK = false;
-long int logInterval = 60000L;
+long int logInterval = 600000L;
 //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
 int needRecovery = 0;
 //Token Blynk
@@ -371,7 +371,7 @@ void logData() {
 */
 String getLogFile(bool write) {
   if (write) {
-    if(needRecovery == 0) {
+    if (needRecovery == 0) {
       needRecovery++;
     }
     String file = String(needRecovery) += ".txt";
@@ -449,9 +449,9 @@ void recovery() {
       Serial.println("REMOVED OK");
     //If going backwards I haven't reached file n 0, I keep going backwards
     if (needRecovery > 0) {
+      EEPROM.write(0, needRecovery);
       recovery();
       needRecovery--;
-      EEPROM.write(0, needRecovery);
     } else { //Ho finito il recovery di tutti i file
       Serial.println(F("Successful Recovery"));
     }
@@ -468,6 +468,7 @@ void recovery() {
       sdOK = false;
     }
   }
+  EEPROM.write(0, needRecovery);
 }
 
 //Read from Blynk's server values to be re-synced to arduino when rebooted
@@ -544,12 +545,14 @@ void checkWifi() {
     Serial.println("WiFi Down");
     lcdClearLine(1);
     WiFi.begin(ssid, pass);
-    Blynk.connect(5000);
     printWifiData();
     //server.begin();
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));
+  }
+  if (!Blynk.connected()) {
+    Blynk.connect(10000);
   }
 }
 
