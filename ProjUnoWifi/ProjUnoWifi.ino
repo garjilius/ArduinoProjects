@@ -22,7 +22,7 @@ hd44780_I2Cexp lcd;
 #define EVMOV 2
 
 //30000 byte = about 1000 lines
-#define MAXLOGSIZE 30
+#define MAXLOGSIZE 3000
 
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
@@ -400,12 +400,12 @@ void deleteSDLog() {
     if (SD.remove(entry.name())) {
       Serial.println(": removed");
       needRecovery--;
-      EEPROM.write(0, needRecovery);
     }
     else {
       Serial.println(": not removed");
     }
   }
+  EEPROM.write(0, needRecovery);
 }
 
 
