@@ -22,7 +22,7 @@ hd44780_I2Cexp lcd;
 #define EVMOV 2
 
 //30000 byte = about 1000 lines
-#define MAXLOGSIZE 30000
+#define MAXLOGSIZE 30
 
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
@@ -41,7 +41,7 @@ int humLimit = 75;
 int tempLimit = 25;
 int timerGoogle;
 bool sdOK = false;
-long int logInterval = 600000L;
+long int logInterval = 60000L;
 //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
 int needRecovery = 0;
 //Token Blynk
@@ -241,7 +241,7 @@ void setup() {
   pinMode(WIFILED, OUTPUT);
   pinMode(DHTPIN, INPUT);
   pinMode(IRPIN, INPUT);
-  WiFi.setTimeout(60000);
+  WiFi.setTimeout(5000);
   dht.begin();
   server.begin();   // start the web server on port 80
   //Display Initialization
@@ -266,12 +266,12 @@ void setup() {
   myRTC.setDS1302Time(00, 00, 19, 5, 25, 10, 2019);
   currentDay = myRTC.dayofmonth;
 
-  //Reads from eeprom if there's need for recovery or not
+  //Reads from eeprom if there's need for recovery or not.
   EEPROM.get(0, needRecovery);
-  if ((needRecovery > 0) && (WiFi.status() == WL_CONNECTED)) {
-    Serial.print(F("Need recovery: "));
-    Serial.println(needRecovery);
-  }
+  //Print number of files that need recovery
+  Serial.print(F("Need recovery: "));
+  Serial.println(needRecovery);
+
 
   printWifiData();
 
@@ -371,6 +371,9 @@ void logData() {
 */
 String getLogFile(bool write) {
   if (write) {
+    if(needRecovery == 0) {
+      needRecovery++;
+    }
     String file = String(needRecovery) += ".txt";
     File checkFile = SD.open(String(needRecovery) += ".txt");
     if (checkFile.size() > MAXLOGSIZE) {
@@ -446,9 +449,9 @@ void recovery() {
       Serial.println("REMOVED OK");
     //If going backwards I haven't reached file n 0, I keep going backwards
     if (needRecovery > 0) {
+      recovery();
       needRecovery--;
       EEPROM.write(0, needRecovery);
-      recovery();
     } else { //Ho finito il recovery di tutti i file
       Serial.println(F("Successful Recovery"));
     }
@@ -538,9 +541,11 @@ void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
+    Serial.println("WiFi Down");
     lcdClearLine(1);
     WiFi.begin(ssid, pass);
-    Blynk.connect(10000);
+    Blynk.connect(5000);
+    printWifiData();
     //server.begin();
   } else {
     digitalWrite(WIFILED, HIGH);
