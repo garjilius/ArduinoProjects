@@ -21,6 +21,8 @@ hd44780_I2Cexp lcd;
 #define EVTEMP 1
 #define EVMOV 2
 
+#define MAXLOGSIZE 40 //DEBUGGING REASONS
+
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
@@ -38,13 +40,15 @@ int humLimit = 75;
 int tempLimit = 25;
 int timerGoogle;
 bool sdOK = false;
-long int logInterval = 600000L;
+//long int logInterval = 600000L;
+int logInterval = 5000; //DEBUGGING REASONS
 byte needRecovery = 0;
 //Token Blynk
 char auth[] = "QGJM5LWaUibrTKblRJ-EGO3dllEngTD1";
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
+int numLogFile = 0;
 
 //Saving info used for recap email
 //Position 0: Min - position 1: Max
@@ -73,7 +77,7 @@ void loop() {
   myRTC.updateTime();
 
   //Retries to open SD if failed.
-    //If SD is not working, sd led comes up, then it is turned off again if SD starts working
+  //If SD is not working, sd led comes up, then it is turned off again if SD starts working
   if (!sdOK) {
     digitalWrite(SDLED, HIGH);  // indicate via LED
     if (sdOK = SD.begin(chipSelect)) {
@@ -281,7 +285,8 @@ void setup() {
 
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
-  timerGoogle = timer.setInterval(logInterval, sendData);
+  //timerGoogle = timer.setInterval(logInterval, sendData);
+  timerGoogle = timer.setInterval(logInterval, logData); //FOR DEBUGGING REASONS!!!
   timer.setInterval(15000, handleDisplay);
   timer.setInterval(60000, checkWifi);
   timer.setInterval(1800000L, handleReports);
@@ -344,12 +349,12 @@ void logData() {
   dataString += " ";
   dataString += hum;
 
-  File dataFile = SD.open("log.txt", FILE_WRITE);
+  File dataFile = SD.open(getLogFile(1), FILE_WRITE);
   //30000 bytes are approx 1000 lines
-  if (dataFile.size() > 30000) {
+ /* if (dataFile.size() > MAXLOGSIZE) { //DEBUGGING
     deleteSDLog();
     dataFile = SD.open("log.txt", FILE_WRITE);
-  }
+  } */
   lcd.setCursor(13, 3);
   // if the file is available, write to it:
   if (dataFile) {
@@ -613,6 +618,18 @@ bool dateChanged() {
   return false;
 }
 
+String getLogFile(bool write) {
+  if (write) {
+    String file = String(numLogFile) += ".txt";
+    File checkFile = SD.open(String(numLogFile) += ".txt");
+    if (checkFile.size() > MAXLOGSIZE) {
+      numLogFile++;
+      checkFile.close();
+    }
+  }
+  Serial.println(String(numLogFile) += ".txt");
+  return String(numLogFile) += ".txt";
+}
 
 /*checks if the date has changed and if it has, sends a report.
   It's handy having a separate function to do it because it can be called repeatedly in a timer
