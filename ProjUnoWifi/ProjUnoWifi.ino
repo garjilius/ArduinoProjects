@@ -447,9 +447,7 @@ void recovery() {
       EEPROM.write(0, needRecovery);
       recovery();
     } else { //Ho finito il recovery di tutti i file
-      //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
-      needRecovery = 0;
-      EEPROM.write(0, needRecovery);
+      Serial.println(F("Successful Recovery"));
     }
 
   } else {
