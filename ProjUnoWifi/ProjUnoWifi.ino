@@ -13,6 +13,7 @@
 #define IRPIN 9
 #define WIFILED 3
 #define SDLED 4
+#define CONTROLLED 10//DEBUGGING
 
 hd44780_I2Cexp lcd;
 
@@ -76,6 +77,12 @@ void loop() {
   timer.run();
   myRTC.updateTime();
 
+  //DEBUGGING: BLINK A LED. SLOWS DOWN ARDUINO, REMOVE ASAP!
+  digitalWrite(CONTROLLED, HIGH);
+  delay(500);
+  digitalWrite(CONTROLLED, LOW);
+  delay(500);
+
   //Retries to open SD if failed.
   //If SD is not working, sd led comes up, then it is turned off again if SD starts working
   if (!sdOK) {
@@ -134,7 +141,7 @@ void loop() {
           client.println(F("</BODY>"));
           client.println(F("</HTML>"));
           // give the web browser time to receive the data
-          delay(50);
+          delay(500);
           client.stop();
           //Serial.println("client disonnected");
           //E' stata settata una data
@@ -239,6 +246,7 @@ void setup() {
   Serial.begin(9600);
   pinMode(SDLED, OUTPUT);
   pinMode(WIFILED, OUTPUT);
+  pinMode(CONTROLLED, OUTPUT); //DEBUGGING
   pinMode(DHTPIN, INPUT);
   pinMode(IRPIN, INPUT);
   WiFi.setTimeout(5000);
@@ -470,6 +478,12 @@ void recovery() {
   EEPROM.write(0, needRecovery);
 }
 
+//Check if log lines need to be synced from the SD card to google sheets
+void recoveryManager() {
+  if (needRecovery >= 1)
+    recovery();
+}
+
 //Read from Blynk's server values to be re-synced to arduino when rebooted
 BLYNK_WRITE(V0)  {
   systemDisabled = param.asInt();
@@ -555,12 +569,7 @@ void checkWifi() {
   }
 }
 
-//Check if log lines need to be synced from the SD card to google sheets
-void recoveryManager() {
-  if ((needRecovery >= 1) && (WiFi.status() == WL_CONNECTED)) {
-    recovery();
-  }
-}
+
 
 //Delete all lines in Google Sheets Log
 void resetSheets() {
