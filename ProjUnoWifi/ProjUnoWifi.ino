@@ -21,7 +21,8 @@ hd44780_I2Cexp lcd;
 #define EVTEMP 1
 #define EVMOV 2
 
-#define MAXLOGSIZE 100 //DEBUGGING REASONS
+//30000 byte = about 1000 lines
+#define MAXLOGSIZE 30000 
 
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
@@ -40,9 +41,8 @@ int humLimit = 75;
 int tempLimit = 25;
 int timerGoogle;
 bool sdOK = false;
-long int logInterval = 10000L;
-//int logInterval = 5000; //DEBUGGING REASONS
-int needRecovery = 0;
+long int logInterval = 600000L;
+int needRecovery;
 //Token Blynk
 char auth[] = "QGJM5LWaUibrTKblRJ-EGO3dllEngTD1";
 bool notificationAllowed[3] = {true, true, true};
@@ -281,16 +281,14 @@ void setup() {
   */
 
   //First logging happens 30s after boot, regardless of logging interval settings
-  //timer.setTimeout(30000, sendData); DEBUGGING
+  timer.setTimeout(30000, sendData); 
 
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
-  //timerGoogle = timer.setInterval(logInterval, sendData);
-  timerGoogle = timer.setInterval(logInterval, logData); //FOR DEBUGGING REASONS!!!
+  timerGoogle = timer.setInterval(logInterval, sendData);
   timer.setInterval(15000, handleDisplay);
   timer.setInterval(60000, checkWifi);
   timer.setInterval(1800000L, handleReports);
-  //timer.setInterval(5000, debugSystem);
 }
 
 //Re Enables movement notifications
@@ -364,9 +362,10 @@ void logData() {
   }
 }
 
-//Gets the name of the right file to write:
-//If the current file was getting too big, creates the next one
-//If the file is just needed for reading, it returns the current file name
+/*Gets the name of the right file to write:
+*If the current file was getting too big, creates the next one
+*If the file is just needed for reading, it returns the current file name
+*/
 String getLogFile(bool write) {
   if (write) {
     String file = String(needRecovery) += ".txt";
@@ -455,7 +454,6 @@ void recovery() {
 
   } else {
     // if the file didn't open
-
     //If the SD is working but the file didn't open, it means there's no more files to recover: SUCCESS
     if (SD.exists( "/" )) {
       lcdClearLine(3);
