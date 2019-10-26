@@ -22,7 +22,7 @@ hd44780_I2Cexp lcd;
 #define EVMOV 2
 
 //30000 byte = about 1000 lines
-#define MAXLOGSIZE 30000 
+#define MAXLOGSIZE 30000
 
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
@@ -42,7 +42,8 @@ int tempLimit = 25;
 int timerGoogle;
 bool sdOK = false;
 long int logInterval = 600000L;
-int needRecovery;
+//Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
+int needRecovery = 0;
 //Token Blynk
 char auth[] = "QGJM5LWaUibrTKblRJ-EGO3dllEngTD1";
 bool notificationAllowed[3] = {true, true, true};
@@ -113,13 +114,15 @@ void loop() {
           client.println(F("<HEAD>"));
           client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
           //Most of the page gets added via remote javascript to save space on arduino and speed things up
-          client.println(F("<script type=\"text/javascript\" src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jsextra.js?dl=0\"></script>"));
+          client.println(F("<script src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jsextra.js?dl=0\"></script>"));
+          client.println(F("<script src=\"https://kit.fontawesome.com/a076d05399.js\"></script>"));
+
           client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
           client.println(F("</HEAD>"));
           client.println(F("<BODY>"));
           client.println(F("<div id='mainBody'></div>"));
           client.println(F("<form action="">"));
-          client.println(F("Frequenza Logging (minuti)"));
+          client.println(F("<i class=\"fas fa-tachometer-alt\"></i> Frequenza Logging (minuti)"));
           int minInterval = logInterval / 60;
           minInterval = minInterval / 1000;
           String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
@@ -281,7 +284,7 @@ void setup() {
   */
 
   //First logging happens 30s after boot, regardless of logging interval settings
-  timer.setTimeout(30000, sendData); 
+  timer.setTimeout(30000, sendData);
 
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
@@ -363,8 +366,8 @@ void logData() {
 }
 
 /*Gets the name of the right file to write:
-*If the current file was getting too big, creates the next one
-*If the file is just needed for reading, it returns the current file name
+  If the current file was getting too big, creates the next one
+  If the file is just needed for reading, it returns the current file name
 */
 String getLogFile(bool write) {
   if (write) {
