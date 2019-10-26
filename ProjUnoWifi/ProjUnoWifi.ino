@@ -22,7 +22,7 @@ hd44780_I2Cexp lcd;
 #define EVMOV 2
 
 //30000 byte = about 1000 lines
-#define MAXLOGSIZE 3000
+#define MAXLOGSIZE 30000
 
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
@@ -450,7 +450,6 @@ void recovery() {
     //If going backwards I haven't reached file n 0, I keep going backwards
     needRecovery--;
     if (needRecovery > 0) {
-      EEPROM.write(0, needRecovery);
       recovery();
     } else { //Ho finito il recovery di tutti i file
       Serial.println(F("Successful Recovery"));
