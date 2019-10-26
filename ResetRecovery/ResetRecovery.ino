@@ -1,7 +1,9 @@
 #include <EEPROM.h>
 
 void setup() {
-      EEPROM.write(0, 0);
+  for (int i = 0 ; i < EEPROM.length() ; i++) {
+    EEPROM.write(i, 0);
+  }
 }
 
 void loop() {

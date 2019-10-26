@@ -21,7 +21,7 @@ hd44780_I2Cexp lcd;
 #define EVTEMP 1
 #define EVMOV 2
 
-#define MAXLOGSIZE 40 //DEBUGGING REASONS
+#define MAXLOGSIZE 100 //DEBUGGING REASONS
 
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
@@ -40,15 +40,14 @@ int humLimit = 75;
 int tempLimit = 25;
 int timerGoogle;
 bool sdOK = false;
-//long int logInterval = 600000L;
-int logInterval = 5000; //DEBUGGING REASONS
-byte needRecovery = 0;
+long int logInterval = 10000L;
+//int logInterval = 5000; //DEBUGGING REASONS
+int needRecovery = 0;
 //Token Blynk
 char auth[] = "QGJM5LWaUibrTKblRJ-EGO3dllEngTD1";
 bool notificationAllowed[3] = {true, true, true};
 bool systemDisabled = false;
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
-int numLogFile = 0;
 
 //Saving info used for recap email
 //Position 0: Min - position 1: Max
@@ -266,8 +265,9 @@ void setup() {
 
   //Reads from eeprom if there's need for recovery or not
   EEPROM.get(0, needRecovery);
-  if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
-    Serial.println(F("Need recovery"));
+  if ((needRecovery > 0) && (WiFi.status() == WL_CONNECTED)) {
+    Serial.print(F("Need recovery"));
+    Serial.println(needRecovery);
   }
 
   printWifiData();
@@ -281,7 +281,7 @@ void setup() {
   */
 
   //First logging happens 30s after boot, regardless of logging interval settings
-  timer.setTimeout(30000, sendData);
+  //timer.setTimeout(30000, sendData); DEBUGGING
 
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
@@ -317,10 +317,6 @@ void sendData() {
     lcd.print(F("CLOUD ERR"));
     //Log data su SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
     logData();
-    if (needRecovery != 1) {
-      needRecovery = 1;
-      EEPROM.write(0, needRecovery);
-    }
     return;
   }
   readData();
@@ -350,11 +346,6 @@ void logData() {
   dataString += hum;
 
   File dataFile = SD.open(getLogFile(1), FILE_WRITE);
-  //30000 bytes are approx 1000 lines
- /* if (dataFile.size() > MAXLOGSIZE) { //DEBUGGING
-    deleteSDLog();
-    dataFile = SD.open("log.txt", FILE_WRITE);
-  } */
   lcd.setCursor(13, 3);
   // if the file is available, write to it:
   if (dataFile) {
@@ -373,12 +364,47 @@ void logData() {
   }
 }
 
+String getLogFile(bool write) {
+  if (write) {
+    String file = String(needRecovery) += ".txt";
+    File checkFile = SD.open(String(needRecovery) += ".txt");
+    if (checkFile.size() > MAXLOGSIZE) {
+      needRecovery++;
+      EEPROM.write(0, needRecovery);
+      checkFile.close();
+    }
+  }
+  Serial.println(String(needRecovery) += ".txt");
+  return String(needRecovery) += ".txt";
+}
+
+//Delete all lines in SD Log
+void deleteSDLog() {
+  File root = SD.open("/");
+  while (true) {
+    File entry =  root.openNextFile();
+    if (! entry) {
+      // no more files, SD Empty
+      break;
+    }
+    entry.close();
+    Serial.print(entry.name());
+    if(SD.remove(entry.name())) {
+       Serial.println("Removed");
+    } 
+    else {
+      Serial.println(" ");
+    }
+  }
+}
+
 
 /*
    This functions allows me to upload to Google Sheets data that had only been logged to the SD card due to a lack of connection
 */
 void recovery() {
-  File myFile = SD.open("LOG.TXT");
+  File root = SD.open("/");
+  File myFile = root.openNextFile();
   if (myFile) {
     while (myFile.available()) {
       String dateS = myFile.readStringUntil(' ');
@@ -405,23 +431,36 @@ void recovery() {
         //Serial.println(line);
         if (line == "\r") {
           Serial.println(F("Line recovered"));
-          lcdClearLine(3);
-          lcd.print(F("Recovery SUCCESS"));
           break;
         }
       }
     }
     myFile.close();
-    deleteSDLog();
-    needRecovery = 0;
+    if (SD.remove(myFile.name()))
+      Serial.print("REMOVED OK");
+    //If going backwards I haven't reached file n 0, I keep going backwards
+    if (needRecovery > 0) {
+      needRecovery--;
+      EEPROM.write(0, needRecovery);
+      recovery();
+    } else { //Ho finito il recovery di tutti i file
+      //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
+      needRecovery = 0;
+      EEPROM.write(0, needRecovery);
+    }
 
-    //Writing the 'needRecovery' value to Arduino's EEPROM allows me to retrieve it even after rebooting
-    EEPROM.write(0, needRecovery);
   } else {
-    // if the file didn't open, print an error:
-    Serial.println(F("error opening log file"));
-    lcd.print(F("Recovery FAILED"));
-    sdOK = false;
+    // if the file didn't open
+
+    //If the SD is working but the file didn't open, it means there's no more files to recover: SUCCESS
+    if (SD.exists( "/" )) {
+      lcdClearLine(3);
+      lcd.print(F(String(needRecovery) += ": Recovery SUCCESS"));
+    } else {
+      Serial.println(F("error opening log file"));
+      lcd.print(F("Recovery FAILED"));
+      sdOK = false;
+    }
   }
 }
 
@@ -508,7 +547,7 @@ void checkWifi() {
 
 //Check if log lines need to be synced from the SD card to google sheets
 void recoveryManager() {
-  if ((needRecovery == 1) && (WiFi.status() == WL_CONNECTED)) {
+  if ((needRecovery >= 1) && (WiFi.status() == WL_CONNECTED)) {
     recovery();
   }
 }
@@ -538,19 +577,6 @@ void resetSheets() {
   }
 }
 
-//Delete all lines in SD Log
-void deleteSDLog() {
-  lcd.setCursor(4, 3);
-  bool fileRemoved = SD.remove("LOG.TXT");
-  if (fileRemoved) {
-    lcd.print(F("SD RESET OK"));
-    Serial.println(F("File removed"));
-  } else {
-    lcd.print(F("SD RESET ERR"));
-    Serial.println(F("Failed deleting file"));
-    sdOK = false;
-  }
-}
 
 //Clears line 'i' and moves the cursor back to the start of that line
 void lcdClearLine(int i) {
@@ -618,18 +644,6 @@ bool dateChanged() {
   return false;
 }
 
-String getLogFile(bool write) {
-  if (write) {
-    String file = String(numLogFile) += ".txt";
-    File checkFile = SD.open(String(numLogFile) += ".txt");
-    if (checkFile.size() > MAXLOGSIZE) {
-      numLogFile++;
-      checkFile.close();
-    }
-  }
-  Serial.println(String(numLogFile) += ".txt");
-  return String(numLogFile) += ".txt";
-}
 
 /*checks if the date has changed and if it has, sends a report.
   It's handy having a separate function to do it because it can be called repeatedly in a timer
