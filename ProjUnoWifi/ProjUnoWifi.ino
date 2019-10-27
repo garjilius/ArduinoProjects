@@ -601,6 +601,7 @@ void resetSheets() {
   }
 }
 
+//::::::::::::::::::UTILITY FUNCTIONS::::::::::::::::::::::::::::::::::
 
 //Clears line 'i' and moves the cursor back to the start of that line
 void lcdClearLine(int i) {
@@ -665,7 +666,7 @@ void sendReport() {
   resetStats();
 }
 
-//If the date has changed, returns true and uptates currentDay
+//If the date has changed, returns true and updates currentDay
 bool dateChanged() {
   //If date changed
   if (currentDay != myRTC.dayofmonth) {
@@ -683,3 +684,4 @@ void handleReports() {
   if (dateChanged())
     sendReport();
 }
+//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
