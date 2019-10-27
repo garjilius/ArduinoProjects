@@ -78,10 +78,12 @@ void loop() {
   myRTC.updateTime();
 
   //DEBUGGING: BLINK A LED. SLOWS DOWN ARDUINO, REMOVE ASAP!
+  //:::::::::::::::::::::::::::::::
   digitalWrite(CONTROLLED, HIGH);
   delay(500);
   digitalWrite(CONTROLLED, LOW);
   delay(500);
+  //:::::::::::::::::::::::::::::::
 
   //Retries to open SD if failed.
   //If SD is not working, sd led comes up, then it is turned off again if SD starts working
@@ -96,7 +98,7 @@ void loop() {
     }
   }
 
-  //SERVER!
+//:::::::::::::::::::::::::::::::::WEBSERVER:::::::::::::::::::::::::::::::
   WiFiClient client = server.available();   // listen for incoming clients
 
   if (client) {
@@ -190,8 +192,10 @@ void loop() {
       }
     }
   }
+//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 }
 
+//Keep Blynk updated with lastest sensor data. Send notification if treshold passed or movement detected
 void sendSensor() {
   readData();
   Blynk.virtualWrite(V5, hum);
@@ -242,6 +246,7 @@ void sendSensor() {
   }
 }
 
+//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 void setup() {
   Serial.begin(9600);
   pinMode(SDLED, OUTPUT);
@@ -301,6 +306,7 @@ void setup() {
   timer.setInterval(60000, checkWifi);
   timer.setInterval(1800000L, handleReports);
 }
+//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 //Re Enables movement notifications
 void enableMovementNotification() {
@@ -345,6 +351,7 @@ void sendData() {
   }
 }
 
+//::::::::::::::::::::::::FOLLOWING FUNCTIONS HANDLE SD:::::::::::::::::::::::::::::::
 //Logs data to SD
 void logData() {
   String dataString;
@@ -478,13 +485,9 @@ void recovery() {
   EEPROM.write(0, needRecovery);
 }
 
-//Check if log lines need to be synced from the SD card to google sheets
-void recoveryManager() {
-  if (needRecovery >= 1)
-    recovery();
-}
+//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-//Read from Blynk's server values to be re-synced to arduino when rebooted
+//:::::::::Following Functions read from Blynk's server values to be re-synced to arduino when rebooted::::::::::::
 BLYNK_WRITE(V0)  {
   systemDisabled = param.asInt();
 }
@@ -496,13 +499,14 @@ BLYNK_WRITE(V3)  {
 BLYNK_WRITE(V2)  {
   humLimit = param.asFloat();
 }
+//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 // print your board's IP address:
 void printWifiData() {
   Serial.println(WiFi.localIP());
 }
 
-
+//:::::::::::::::FOLLOWING FUNCTIONS HANDLE TIME&DATE STRINGS:::::::::::::
 String printTime() {
   String orario = "";
   orario += myRTC.hours;
@@ -526,6 +530,7 @@ String printDate() {
   orario += myRTC.seconds;
   return orario;
 }
+//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 //Handles info on the i2c display
 void handleDisplay() {
@@ -609,6 +614,13 @@ void lcdClearLine(int i) {
    For example, you can send a mail recap if the date has changed (= on a new day), but you can also send a recap
    explicitly requesting it via control panel and so on
 */
+
+
+//Check if log lines need to be synced from the SD card to google sheets
+void recoveryManager() {
+  if (needRecovery >= 1)
+    recovery();
+}
 
 //Keeps min and max temperature updated
 void manageStats(float temp, int hum) {
