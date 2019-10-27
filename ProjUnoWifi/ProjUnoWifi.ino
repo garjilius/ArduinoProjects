@@ -1,7 +1,7 @@
 /*****************************************************************************************
- *  Lab of IoT - AA 2019/2020 - Emanuele Gargiulo                                        * 
- *  Arduino Alarm & Logger:                                                              *
- *  https://drive.google.com/open?id=1mT9lr5-akYNQww7m9ZU5IvrvnQj9yaphkOifaIx3o74        *
+    Lab of IoT - AA 2019/2020 - Emanuele Gargiulo
+    Arduino Alarm & Logger:
+    https://drive.google.com/open?id=1mT9lr5-akYNQww7m9ZU5IvrvnQj9yaphkOifaIx3o74
  *****************************************************************************************/
 #include <DHT.h>
 #include <BlynkSimpleWiFiNINA.h>
@@ -200,7 +200,7 @@ void loop() {
 //Keep Blynk updated with lastest sensor data. Send notification if treshold passed or movement detected
 void sendSensor() {
   readData();
-  //If not connected to Blynk servers, avoid processing all the information. Still reads it to keep stats updated 
+  //If not connected to Blynk servers, avoid processing all the information. Still reads it to keep stats updated
   if (!Blynk.connected()) {
     return;
   }
@@ -334,7 +334,7 @@ void readData() {
 //Logs data do Google Sheets
 void sendData() {
   lcd.setCursor(4, 3);
-  if ((WiFi.status() != WL_CONNECTED)||(!client.connect(host, httpsPort))) {
+  if ((WiFi.status() != WL_CONNECTED) || (!client.connect(host, httpsPort))) {
     Serial.println(F("Connection failed"));
     lcd.print(F("CLOUD ERR"));
     //Log data su SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
