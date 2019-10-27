@@ -98,7 +98,7 @@ void loop() {
     }
   }
 
-//:::::::::::::::::::::::::::::::::WEBSERVER:::::::::::::::::::::::::::::::
+  //:::::::::::::::::::::::::::::::::WEBSERVER:::::::::::::::::::::::::::::::
   WiFiClient client = server.available();   // listen for incoming clients
 
   if (client) {
@@ -192,12 +192,15 @@ void loop() {
       }
     }
   }
-//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 }
 
 //Keep Blynk updated with lastest sensor data. Send notification if treshold passed or movement detected
 void sendSensor() {
   readData();
+  if (!Blynk.connected()) {
+    return;
+  }
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
 
@@ -327,7 +330,7 @@ void readData() {
 //Logs data do Google Sheets
 void sendData() {
   lcd.setCursor(4, 3);
-  if (!client.connect(host, httpsPort)) {
+  if ((WiFi.status() != WL_CONNECTED)||(!client.connect(host, httpsPort))) {
     Serial.println(F("Connection failed"));
     lcd.print(F("CLOUD ERR"));
     //Log data su SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
