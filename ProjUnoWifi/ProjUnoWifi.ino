@@ -1,3 +1,8 @@
+/*****************************************************************************************
+ *  Lab of IoT - AA 2019/2020 - Emanuele Gargiulo                                        * 
+ *  Arduino Alarm & Logger:                                                              *
+ *  https://drive.google.com/open?id=1mT9lr5-akYNQww7m9ZU5IvrvnQj9yaphkOifaIx3o74        *
+ *****************************************************************************************/
 #include <DHT.h>
 #include <BlynkSimpleWiFiNINA.h>
 #include <virtuabotixRTC.h>
@@ -17,7 +22,7 @@
 
 hd44780_I2Cexp lcd;
 
-//Used to identify the events in the notification array
+//Used to identify the events (Humidity/Temperatyre/Movement) in the notification array
 #define EVHUM 0
 #define EVTEMP 1
 #define EVMOV 2
@@ -32,23 +37,22 @@ WiFiSSLClient client;
 WiFiServer server(80);
 
 DHT dht(DHTPIN, DHTTYPE);
+//User to setup repeated actions
 BlynkTimer timer;
 
-String readString;
-const int chipSelect = 8;
+String readString; //This strings will contain characters read from Clients that connect to Arduino's WebServer or from Google on upload to spreadsheet
+const int chipSelect = 8; //microSD card pin
 int hum;
 float temp;
-int humLimit = 75;
+int humLimit = 75; //Preset treshold for humidity and temperature. Can override via blynk app
 int tempLimit = 25;
 int timerGoogle;
 bool sdOK = false;
-long int logInterval = 600000L;
-//Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
-int needRecovery = 0;
-//Token Blynk
-char auth[] = "QGJM5LWaUibrTKblRJ-EGO3dllEngTD1";
-bool notificationAllowed[3] = {true, true, true};
-bool systemDisabled = false;
+long int logInterval = 600000L; //Preset log interval. Can override via arduino web server
+int needRecovery = 0; //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
+char auth[] = "QGJM5LWaUibrTKblRJ-EGO3dllEngTD1"; //Token Blynk
+bool notificationAllowed[3] = {true, true, true}; //Allows/Denies notifications for humidity, temperature and movement
+bool systemDisabled = false; //Disables notifications for the whole system (via blynk app)
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
 //Saving info used for recap email
@@ -67,6 +71,7 @@ String GAS_ID = "AKfycbyJgvc9Kg3UzkkN_IDy4rPSexJGnunSMjsVoP5gS6J2tvXId6MM";   //
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
 
+//On connection to Blynk Server
 BLYNK_CONNECTED() {
   // Request Blynk server to re-send latest values for all pins
   Blynk.syncAll();
@@ -85,16 +90,14 @@ void loop() {
   delay(500);
   //:::::::::::::::::::::::::::::::
 
-  //Retries to open SD if failed.
+  //Retries to initialize SD if failed.
   //If SD is not working, sd led comes up, then it is turned off again if SD starts working
   if (!sdOK) {
+    Serial.println(F("SD NOT WORKING!"));
     digitalWrite(SDLED, HIGH);  // indicate via LED
     if (sdOK = SD.begin(chipSelect)) {
       Serial.println(F("SD INITIALIZED"));
       digitalWrite(SDLED, LOW);  // indicate via LED
-    }
-    else {
-      Serial.println(F("SD NOT WORKING!"));
     }
   }
 
@@ -125,7 +128,6 @@ void loop() {
           //Most of the page gets added via remote javascript to save space on arduino and speed things up
           client.println(F("<script src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jsextra.js?dl=0\"></script>"));
           client.println(F("<script src=\"https://kit.fontawesome.com/a076d05399.js\"></script>"));
-
           client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
           client.println(F("</HEAD>"));
           client.println(F("<BODY>"));
@@ -146,7 +148,7 @@ void loop() {
           delay(500);
           client.stop();
           //Serial.println("client disonnected");
-          //E' stata settata una data
+          //Gets date from Client via Javascript (view JS source code) and sets RTC to it
           if (readString.indexOf("?date") > 0) {
             //giorno-mese-anno-ora-minuto-secondo
             int date[7];
@@ -187,7 +189,7 @@ void loop() {
             Serial.print(F("Log Interval set to: "));
             Serial.println(logInterval);
           }
-          readString = "";
+          readString = ""; //Reset readString
         }
       }
     }
@@ -198,9 +200,11 @@ void loop() {
 //Keep Blynk updated with lastest sensor data. Send notification if treshold passed or movement detected
 void sendSensor() {
   readData();
+  //If not connected to Blynk servers, avoid processing all the information. Still reads it to keep stats updated 
   if (!Blynk.connected()) {
     return;
   }
+  //Writing to Blynk's virtual pin sends data to the Blynk server (and app)
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
 
@@ -485,10 +489,10 @@ void recovery() {
       sdOK = false;
     }
   }
+  //Saving the updated number of files that need recovery to EEPROM
   EEPROM.write(0, needRecovery);
 }
 
-//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 //:::::::::Following Functions read from Blynk's server values to be re-synced to arduino when rebooted::::::::::::
 BLYNK_WRITE(V0)  {
@@ -577,8 +581,6 @@ void checkWifi() {
   }
 }
 
-
-
 //Delete all lines in Google Sheets Log
 void resetSheets() {
   lcdClearLine(3);
@@ -609,7 +611,7 @@ void resetSheets() {
 //Clears line 'i' and moves the cursor back to the start of that line
 void lcdClearLine(int i) {
   lcd.setCursor(0, i);
-  lcd.print("                    ");
+  lcd.print("                    "); //20 Whitespaces to clean the whole line on a 20x4 display
   lcd.setCursor(0, i);
 }
 
@@ -651,7 +653,6 @@ void resetStats() {
   numMov = 0;
 }
 
-
 //Sends the report mail using Blynk. Body+Subject+emailaddress must be <140 Char
 void sendReport() {
   String report = "Min-Max Temp: ";
@@ -687,4 +688,4 @@ void handleReports() {
   if (dateChanged())
     sendReport();
 }
-//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+//:::::::::::::::::::::::::::::::::EOF:::::::::::::::::::::::::::::::::::::::::::
