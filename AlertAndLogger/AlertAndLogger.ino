@@ -287,11 +287,11 @@ void setup() {
   myRTC.setDS1302Time(00, 00, 19, 5, 25, 10, 2019);
   currentDay = myRTC.dayofmonth;
 
-  //Reads from eeprom if there's need for recovery or not.
-  EEPROM.get(0, needRecovery);
-  //255 is EEPROM's default value. 
-  //I check if there's a file named 255.txt, given that recovery files get incremental names.
-  //If such file doesn't exist, i have confirmation that 255 is just the default value and take it back to 0
+  /*Reads from eeprom if there's need for recovery or not.
+  255 is EEPROM's default value. 
+  I check if there's a file named 255.txt, given that recovery files get incremental names.
+  If such file doesn't exist, i have confirmation that 255 is just the default value and take it back to 0 */
+    EEPROM.get(0, needRecovery);
   if (needRecovery == 255) {
     if (!SD.exists("255.txt")) {
     needRecovery = 0;
