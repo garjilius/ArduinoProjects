@@ -1,8 +1,8 @@
 /*****************************************************************************************
- *   Lab of IoT - AA 2019/2020 - Emanuele Gargiulo                                       *
- *   Arduino Alert & Logger:                                                             *
- *   https://drive.google.com/open?id=1mT9lr5-akYNQww7m9ZU5IvrvnQj9yaphkOifaIx3o74       *
- *   https://github.com/garjilius/ArduinoProjects/tree/master/AlertAndLogger             *
+     Lab of IoT - AA 2019/2020 - Emanuele Gargiulo
+     Arduino Alert & Logger:
+     https://drive.google.com/open?id=1mT9lr5-akYNQww7m9ZU5IvrvnQj9yaphkOifaIx3o74
+     https://github.com/garjilius/ArduinoProjects/tree/master/AlertAndLogger
  *****************************************************************************************/
 #include <DHT.h>
 #include <BlynkSimpleWiFiNINA.h>
@@ -289,10 +289,15 @@ void setup() {
 
   //Reads from eeprom if there's need for recovery or not.
   EEPROM.get(0, needRecovery);
+  //255 is EEPROM's default value, I assume there can't be 255 recovery files and therefore Arduino has just been re-flashed or EEPROM has problems.
+  //In this case, I set needRecovery back to 0...
+  if (needRecovery == 255) {
+    needRecovery = 0;
+    EEPROM.write(0, needRecovery);
+  }
   //Print number of files that need recovery
   Serial.print(F("Need recovery: "));
   Serial.println(needRecovery);
-
 
   printWifiData();
 
