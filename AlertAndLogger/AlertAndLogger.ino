@@ -293,7 +293,7 @@ void setup() {
   //I check if there's a file named 255.txt, given that recovery files get incremental names.
   //If such file doesn't exist, i have confirmation that 255 is just the default value and take it back to 0
   if (needRecovery == 255) {
-    if (!SD.exists("255.txt") {
+    if (!SD.exists("255.txt")) {
     needRecovery = 0;
     EEPROM.write(0, needRecovery);
     }
