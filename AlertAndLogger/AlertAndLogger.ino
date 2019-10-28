@@ -289,11 +289,14 @@ void setup() {
 
   //Reads from eeprom if there's need for recovery or not.
   EEPROM.get(0, needRecovery);
-  //255 is EEPROM's default value, I assume there can't be 255 recovery files and therefore Arduino has just been re-flashed or EEPROM has problems.
-  //In this case, I set needRecovery back to 0...
+  //255 is EEPROM's default value. 
+  //I check if there's a file named 255.txt, given that recovery files get incremental names.
+  //If such file doesn't exist, i have confirmation that 255 is just the default value and take it back to 0
   if (needRecovery == 255) {
+    if (!SD.exists("255.txt") {
     needRecovery = 0;
     EEPROM.write(0, needRecovery);
+    }
   }
   //Print number of files that need recovery
   Serial.print(F("Need recovery: "));
