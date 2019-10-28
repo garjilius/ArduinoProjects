@@ -1,8 +1,8 @@
 #include <SPI.h>
 #include <WiFiNINA.h>
 
-char ssid[] = "***REMOVED***";          //  your network SSID (name) 
-char pass[] = "***REMOVED***";   // your network password
+char ssid[] = "Garjilius";          //  your network SSID (name) 
+char pass[] = "garjiliusnet27";   // your network password
 int status = WL_IDLE_STATUS;
 
 WiFiServer server(80);

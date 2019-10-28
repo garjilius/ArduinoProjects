@@ -39,8 +39,8 @@ char auth[] = "YourAuthToken";
 
 // Your WiFi credentials.
 // Set password to "" for open networks.
-char ssid[] = "***REMOVED***";
-char pass[] = "***REMOVED***";
+char ssid[] = "Garjilius";
+char pass[] = "garjiliusnet27";
 
 void setup()
 {

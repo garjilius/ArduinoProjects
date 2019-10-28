@@ -17,8 +17,8 @@
  
 DHT dht(DHTPIN, DHTTYPE);
 
-const char* ssid = "***REMOVED***";    // name of your wifi network!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-const char* password = "***REMOVED***";     // wifi pasword !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+const char* ssid = "Garjilius";    // name of your wifi network!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+const char* password = "garjiliusnet27";     // wifi pasword !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 const char* host = "script.google.com";
 const int httpsPort = 443;
 // Use WiFiClientSecure class to create TLS connection

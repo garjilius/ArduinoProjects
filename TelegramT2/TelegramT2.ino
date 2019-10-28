@@ -5,12 +5,12 @@
 #include <TelegramBot.h>
 #define LED 1
 // Initialize Wifi connection to the router
-const char* ssid     = "***REMOVED***";
-const char* password = "***REMOVED***";
+const char* ssid     = "Garjilius";
+const char* password = "garjiliusnet27";
 
 
 // Initialize Telegram BOT
-const char BotToken[] = "***REMOVED***";
+const char BotToken[] = "906190094:AAEbpBbawOUQMELdStW0o0pQwa5LGAaZ2BU";
 
 WiFiClientSecure net_ssl;
 TelegramBot bot (BotToken, net_ssl);

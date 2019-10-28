@@ -48,8 +48,8 @@ char auth[] = "U--PgDCcR8ogT9XIBhYPVMgjB7qddAli";
 
 // Your WiFi credentials.
 // Set password to "" for open networks.
-char ssid[] = "***REMOVED***";
-char pass[] = "***REMOVED***";
+char ssid[] = "Garjilius";
+char pass[] = "garjiliusnet27";
 
 // Hardware Serial on Mega, Leonardo, Micro...
 //#define EspSerial Serial1

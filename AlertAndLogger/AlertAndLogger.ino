@@ -1,7 +1,8 @@
 /*****************************************************************************************
-    Lab of IoT - AA 2019/2020 - Emanuele Gargiulo
-    Arduino Alert & Logger:
-    https://drive.google.com/open?id=1mT9lr5-akYNQww7m9ZU5IvrvnQj9yaphkOifaIx3o74
+ *   Lab of IoT - AA 2019/2020 - Emanuele Gargiulo                                       *
+ *   Arduino Alert & Logger:                                                             *
+ *   https://drive.google.com/open?id=1mT9lr5-akYNQww7m9ZU5IvrvnQj9yaphkOifaIx3o74       *
+ *   https://github.com/garjilius/ArduinoProjects/tree/master/AlertAndLogger             *
  *****************************************************************************************/
 #include <DHT.h>
 #include <BlynkSimpleWiFiNINA.h>

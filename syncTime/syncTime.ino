@@ -23,8 +23,8 @@
 int status = WL_IDLE_STATUS;
 //#include "arduino_secrets.h" 
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
-char ssid[] = "***REMOVED***";        // your network SSID (name)
-char pass[] = "***REMOVED***";    // your network password (use for WPA, or use as key for WEP)
+char ssid[] = "Garjilius";        // your network SSID (name)
+char pass[] = "garjiliusnet27";    // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;            // your network key Index number (needed only for WEP)
 
 unsigned int localPort = 2390;      // local port to listen for UDP packets
