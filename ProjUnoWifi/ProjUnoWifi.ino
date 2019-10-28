@@ -661,7 +661,7 @@ void sendReport() {
   report += tempStat[1];
   report += "C | Min-Max Hum: ";
   report += humStat[0];
-  report += " % - ";
+  report += "% - ";
   report += humStat[1];
   report += "% | #Movements: ";
   report += numMov;
