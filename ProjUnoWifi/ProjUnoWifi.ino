@@ -48,7 +48,7 @@ int humLimit = 75; //Preset treshold for humidity and temperature. Can override 
 int tempLimit = 25;
 int timerGoogle;
 bool sdOK = false;
-long int logInterval = 600000L; //Preset log interval. Can override via arduino web server
+long int logInterval = 900000L; //Preset log interval. Can override via arduino web server
 int needRecovery = 0; //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
 char auth[] = "QGJM5LWaUibrTKblRJ-EGO3dllEngTD1"; //Token Blynk
 bool notificationAllowed[3] = {true, true, true}; //Allows/Denies notifications for humidity, temperature and movement
