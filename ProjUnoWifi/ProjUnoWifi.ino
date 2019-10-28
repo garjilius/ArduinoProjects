@@ -50,7 +50,6 @@ int timerGoogle;
 bool sdOK = false;
 long int logInterval = 900000L; //Preset log interval. Can override via arduino web server
 int needRecovery = 0; //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
-char auth[] = "QGJM5LWaUibrTKblRJ-EGO3dllEngTD1"; //Token Blynk
 bool notificationAllowed[3] = {true, true, true}; //Allows/Denies notifications for humidity, temperature and movement
 bool systemDisabled = false; //Disables notifications for the whole system (via blynk app)
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
@@ -66,8 +65,9 @@ int currentDay = 0;
 const char* host = "script.google.com";
 const int httpsPort = 443;
 
-String GAS_ID = "AKfycbyJgvc9Kg3UzkkN_IDy4rPSexJGnunSMjsVoP5gS6J2tvXId6MM";   // Google App Script id
-
+//From arduino_secrets.h
+char auth[] = BlynkToken; //Blynk Token: Pairs project with app
+String GAS_ID = GoogleAppScript_ID; //Identifies Google App Script
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
 
@@ -147,7 +147,7 @@ void loop() {
           // give the web browser time to receive the data
           delay(500);
           client.stop();
-          //Serial.println("client disonnected");
+          //Serial.println("client disconnected");
           //Gets date from Client via Javascript (view JS source code) and sets RTC to it
           if (readString.indexOf("?date") > 0) {
             //giorno-mese-anno-ora-minuto-secondo
@@ -567,7 +567,7 @@ void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
-    Serial.println("WiFi Down");
+    //Serial.println("WiFi Down");
     lcdClearLine(1);
     WiFi.begin(ssid, pass);
     printWifiData();
