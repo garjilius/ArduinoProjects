@@ -378,7 +378,6 @@ void logData() {
   dataString += hum;
 
   File dataFile = SD.open(getLogFile(1), FILE_WRITE);
-  lcd.setCursor(13, 3);
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.println(dataString);
@@ -386,12 +385,10 @@ void logData() {
     // print to the serial port too:
     Serial.print(F("LoggedToSD: "));
     Serial.println(dataString);
-    lcd.print(" SD OK");
   }
   // if the file isn't open, pop up an error:
   else {
     Serial.println(F("error opening log file"));
-    lcd.print(F("SD ERR"));
     sdOK = false;
     needRecovery--;
   }
