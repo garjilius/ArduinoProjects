@@ -296,6 +296,8 @@ void setup() {
     EEPROM.write(0, needRecovery);
     }
   }
+
+  
   //Print number of files that need recovery
   Serial.print(F("Need recovery: "));
   Serial.println(needRecovery);
@@ -403,16 +405,18 @@ String getLogFile(bool write) {
   if (write) {
     if (needRecovery == 0) {
       needRecovery++;
+      EEPROM.write(0, needRecovery);
     }
     String file = String(needRecovery) += ".txt";
     File checkFile = SD.open(String(needRecovery) += ".txt");
     if (checkFile.size() > MAXLOGSIZE) {
       needRecovery++;
-      checkFile.close();
       EEPROM.write(0, needRecovery);
+      checkFile.close();
     }
   }
   Serial.println(String(needRecovery) += ".txt");
+  int temp;
   return String(needRecovery) += ".txt";
 }
 
