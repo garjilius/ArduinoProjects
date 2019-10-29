@@ -342,7 +342,7 @@ void readData() {
 
 //Logs data do Google Sheets
 void sendData() {
-  lcd.setCursor(4, 3);
+  lcd.setCursor(0, 3);
   if ((WiFi.status() != WL_CONNECTED) || (!client.connect(host, httpsPort))) {
     Serial.println(F("Connection failed"));
     lcd.print(F("CLOUD ERR"));
@@ -361,7 +361,7 @@ void sendData() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       Serial.println(F("Logged to Google Sheets"));
-      lcd.print(F("CLOUD OK"));
+      lcd.print(F("CLOUD LOG OK"));
       break;
     }
   }
@@ -559,8 +559,10 @@ void handleDisplay() {
   } else {
     lcd.print(F(" - SD OK"));
   }
-  lcd.setCursor(0, 3);
-  lcd.print(F("Log:"));
+  lcd.setCursor(13, 3);
+  lcd.print(F("("));
+  lcd.print(needRecovery); //Number of files that need recovery
+  lcd.print(F(")"));
 }
 
 //If WIFI is not working, wifi led is switched off and we attempt to reconnect to wifi and to blynk servers
