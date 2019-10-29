@@ -513,12 +513,6 @@ BLYNK_WRITE(V3)  {
 BLYNK_WRITE(V2)  {
   humLimit = param.asFloat();
 }
-//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-// print your board's IP address:
-void printWifiData() {
-  Serial.println(WiFi.localIP());
-}
 
 //:::::::::::::::FOLLOWING FUNCTIONS HANDLE TIME&DATE STRINGS:::::::::::::
 String printTime() {
@@ -614,6 +608,11 @@ void resetSheets() {
 }
 
 //::::::::::::::::::UTILITY FUNCTIONS::::::::::::::::::::::::::::::::::
+
+// print your board's IP address:
+void printWifiData() {
+  Serial.println(WiFi.localIP());
+}
 
 //Clears line 'i' and moves the cursor back to the start of that line
 void lcdClearLine(int i) {
