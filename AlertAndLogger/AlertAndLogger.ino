@@ -342,10 +342,10 @@ void readData() {
 
 //Logs data do Google Sheets
 void sendData() {
-  lcd.setCursor(0, 3);
+  lcdClearLine(3);
   if ((WiFi.status() != WL_CONNECTED) || (!client.connect(host, httpsPort))) {
     Serial.println(F("Connection failed"));
-    lcd.print(F("CLOUD ERR"));
+    lcd.print(F("CLOUD LOG ERR"));
     //Log data su SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
     logData();
     return;
@@ -677,6 +677,8 @@ void sendReport() {
   report += numMov;
   //After sending the email, stats get reset
   Blynk.email(F("Daily report"), report);
+  lcdClearline(0);
+  lcd.print("Report Sent");
   resetStats();
 }
 
