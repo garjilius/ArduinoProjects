@@ -175,7 +175,7 @@ void loop() {
           if (readString.indexOf("?deleteSD") > 0) {
             deleteSDLog();
           }
-          if (readString.indexOf("?sendReport") > 0) {
+          if (readString.indexOf("?sendReport") > 0) {n
             Serial.println("Send report...");
             sendReport();
           }
@@ -391,7 +391,9 @@ void logData() {
     Serial.println(F("error opening log file"));
     lcd.print(F("SD ERR"));
     sdOK = false;
+    needRecovery--;
   }
+  EEPROM.write(0, needRecovery);
 }
 
 /*Gets the name of the right file to write:
@@ -407,7 +409,6 @@ String getLogFile(bool write) {
     File checkFile = SD.open(String(needRecovery) += ".txt");
     if (checkFile.size() > MAXLOGSIZE) {
       needRecovery++;
-      EEPROM.write(0, needRecovery);
       checkFile.close();
     }
   }
@@ -577,7 +578,8 @@ void checkWifi() {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK"));
   }
-  if (!Blynk.connected()) {
+  //If WIFI is connected but blynk isn't, I can try to reconnect to blynk servers
+  if ((WiFi.status() == WL_CONNECTED) && (!Blynk.connected())) {
     Blynk.connect(10000);
   }
 }
