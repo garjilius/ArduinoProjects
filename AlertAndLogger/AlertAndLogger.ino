@@ -282,7 +282,7 @@ void setup() {
 
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
-  myRTC.setDS1302Time(00, 00, 19, 5, 25, 10, 2019);
+  myRTC.setDS1302Time(00, 30, 14, 5, 30, 10, 2019);
   currentDay = myRTC.dayofmonth;
 
   /*Reads from eeprom if there's need for recovery or not.
