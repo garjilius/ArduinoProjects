@@ -175,7 +175,7 @@ void loop() {
           if (readString.indexOf("?deleteSD") > 0) {
             deleteSDLog();
           }
-          if (readString.indexOf("?sendReport") > 0) {n
+          if (readString.indexOf("?sendReport") > 0) {
             Serial.println("Send report...");
             sendReport();
           }
@@ -393,7 +393,6 @@ void logData() {
     sdOK = false;
     needRecovery--;
   }
-  EEPROM.write(0, needRecovery);
 }
 
 /*Gets the name of the right file to write:
@@ -410,6 +409,7 @@ String getLogFile(bool write) {
     if (checkFile.size() > MAXLOGSIZE) {
       needRecovery++;
       checkFile.close();
+      EEPROM.write(0, needRecovery);
     }
   }
   Serial.println(String(needRecovery) += ".txt");
