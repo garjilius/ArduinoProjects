@@ -15,8 +15,9 @@
 #include <EEPROM.h>
 #include "arduino_secrets.h"
 
-#define DHTPIN 2
-#define IRPIN 9
+#define DHTPIN 2 //Temp/Hum sensor pin
+#define IRPIN 9 //Motion sensor pin
+#define chipSelect  8 //microSD card pin
 #define WIFILED 3
 #define SDLED 4
 #define CONTROLLED 10//DEBUGGING
@@ -42,8 +43,7 @@ DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer;
 
 String readString; //This strings will contain characters read from Clients that connect to Arduino's WebServer or from Google on upload to spreadsheet
-const int chipSelect = 8; //microSD card pin
-int hum;
+byte hum;
 float temp;
 int humLimit = 75; //Preset treshold for humidity and temperature. Can override via blynk app
 int tempLimit = 25;
@@ -57,10 +57,10 @@ virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
 //Saving info used for recap email
 //Position 0: Min - position 1: Max
-int humStat[2] = {100, -100};
+byte humStat[2] = {100, 0};
 float tempStat[2] = {100, -100};
 int numMov = 0;
-int currentDay = 0;
+byte currentDay = 0;
 
 //Google Sheets connection data
 const char* host = "script.google.com";
@@ -82,7 +82,6 @@ void loop() {
   Blynk.run();
   timer.run();
   myRTC.updateTime();
-
   //DEBUGGING: BLINK A LED. SLOWS DOWN ARDUINO, REMOVE ASAP!
   //:::::::::::::::::::::::::::::::
   digitalWrite(CONTROLLED, HIGH);
@@ -120,9 +119,8 @@ void loop() {
           client.println(F("HTTP/1.1 200 OK"));
           client.println(F("Content-Type: text/html"));
           client.println(F("Connection: close"));  // the connection will be closed after completion of the response
-          //client.println("Refresh: 5");  // refresh the page automatically every 5 sec
           client.println();
-          client.println(F("<!DOCTYPE HTML>"));
+          //client.println(F("<!DOCTYPE HTML>"));
           client.println(F("<HTML>"));
           client.println(F("<HEAD>"));
           client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
