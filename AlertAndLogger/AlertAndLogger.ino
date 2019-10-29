@@ -416,7 +416,6 @@ String getLogFile(bool write) {
     }
   }
   Serial.println(String(needRecovery) += ".txt");
-  int temp;
   return String(needRecovery) += ".txt";
 }
 
