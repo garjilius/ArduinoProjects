@@ -141,7 +141,7 @@ void loop() {
           interval += minInterval;
           interval += ">";
           client.println(interval);
-          client.println(F("<input type=\"submit\" class=\"button button1\">"));
+          client.println(F("<input type=\"submit\" class=\"button button1\"></form>"));
           client.println(F("<div id='leg'></div>"));
           client.println(F("</BODY>"));
           client.println(F("</HTML>"));
@@ -312,8 +312,6 @@ void setup() {
   Serial.println(needRecovery);
 
   printWifiData();
-  handleDisplay();
-  checkWifi();
 
   /*
     String fv = WiFi.firmwareVersion();
@@ -323,13 +321,15 @@ void setup() {
     }
   */
 
-  //First logging happens 30s after boot, regardless of logging interval settings
+  //First logging happens 30s after boot, regardless of logging interval settings. Display initialized after 4s
   timer.setTimeout(30000, sendData);
+  timer.setTimeout(4000, handleDisplay);
+  timer.setTimeout(4500, checkWifi);
 
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
-  timer.setInterval(5000, handleDisplay);
+  timer.setInterval(20000, handleDisplay);
   timer.setInterval(60000, checkWifi);
   timer.setInterval(1800000L, handleReports);
 }
