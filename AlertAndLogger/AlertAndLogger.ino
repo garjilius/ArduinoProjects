@@ -22,6 +22,18 @@
 #define SDLED 4
 #define CONTROLLED 10//DEBUGGING
 
+#define DEBUG
+//Allows to toggle SERIAL PRINT on or off simply defining (or not defining) Debug (^ above)
+#ifdef DEBUG
+ #define DEBUG_PRINT(x)     Serial.print(x)
+ #define DEBUG_PRINTDEC(x)  Serial.print(x, DEC)
+ #define DEBUG_PRINTLN(x)   Serial.println(x)
+#else
+ #define DEBUG_PRINT(x)
+ #define DEBUG_PRINTDEC(x)
+ #define DEBUG_PRINTLN(x) 
+#endif
+
 hd44780_I2Cexp lcd;
 
 //Used to identify the events (Humidity/Temperatyre/Movement) in the notification array
@@ -94,10 +106,10 @@ void loop() {
   //Retries to initialize SD if failed.
   //If SD is not working, sd led comes up, then it is turned off again if SD starts working
   if (!sdOK) {
-    Serial.println(F("SD NOT WORKING!"));
+    DEBUG_PRINTLN(F("SD NOT WORKING!"));
     digitalWrite(SDLED, HIGH);  // indicate via LED
     if (sdOK = SD.begin(chipSelect)) {
-      Serial.println(F("SD INITIALIZED"));
+      DEBUG_PRINTLN(F("SD INITIALIZED"));
       digitalWrite(SDLED, LOW);  // indicate via LED
     }
   }
@@ -107,7 +119,7 @@ void loop() {
   WiFiClient client = server.available();   // listen for incoming clients
 
   if (client) {
-    //Serial.println("new client");
+    //DEBUG_PRINTLN("new client");
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
@@ -149,7 +161,7 @@ void loop() {
           // give the web browser time to receive the data
           delay(500);
           client.stop();
-          //Serial.println("client disconnected");
+          //DEBUG_PRINTLN("client disconnected");
           //Gets date from Client via Javascript (view JS source code) and sets RTC to it
           if (readString.indexOf("?date") > 0) {
             //giorno-mese-anno-ora-minuto-secondo
@@ -164,7 +176,7 @@ void loop() {
             // seconds, minutes, hours, day of the week, day of the month, month, year
             myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
             currentDay = myRTC.dayofmonth;
-            Serial.println(F("Time Set"));
+            DEBUG_PRINTLN(F("Time Set"));
             lcdClearLine(3);
             lcd.print(F("Time Set"));
           }
@@ -181,7 +193,7 @@ void loop() {
             deleteSDLog();
           }
           if (readString.indexOf("?sendReport") > 0) {
-            Serial.println("Send report...");
+            DEBUG_PRINTLN("Send report...");
             sendReport();
           }
           if (readString.indexOf("?logInterval") > 0) {
@@ -190,8 +202,8 @@ void loop() {
             logInterval = 60L * 1000L * minInterval; //Force value to Long
             timer.deleteTimer(timerGoogle);
             timerGoogle = timer.setInterval(logInterval, sendData);
-            Serial.print(F("Log Interval set to: "));
-            Serial.println(logInterval);
+            DEBUG_PRINT(F("Log Interval set to: "));
+            DEBUG_PRINTLN(logInterval);
             lcdClearLine(3);
             lcd.print("INTERVAL: ");
             lcd.print(minInterval);
@@ -278,10 +290,10 @@ void setup() {
   sdOK = SD.begin(chipSelect);
   if (!sdOK) {
     //Commented out as it will be printed in the loop function
-    //Serial.println(F("SD Card failed"));
+    //DEBUG_PRINTLN(F("SD Card failed"));
     lcd.print(F(" - SD Err"));
   } else {
-    Serial.println(F("SD Card initialized."));
+    DEBUG_PRINTLN(F("SD Card initialized."));
     lcd.print(F(" - SD OK"));
   }
 
@@ -309,16 +321,16 @@ void setup() {
 
 
   //Print number of files that need recovery
-  Serial.print(F("Need recovery: "));
-  Serial.println(needRecovery);
+  DEBUG_PRINT(F("Need recovery: "));
+  DEBUG_PRINTLN(needRecovery);
 
   printWifiData();
 
   /*
     String fv = WiFi.firmwareVersion();
     if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-    Serial.print(F("Please upgrade the firmware. Installed: "));
-    Serial.println(fv);
+    DEBUG_PRINT(F("Please upgrade the firmware. Installed: "));
+    DEBUG_PRINTLN(fv);
     }
   */
 
@@ -346,7 +358,7 @@ void readData() {
   hum = dht.readHumidity();
   temp = dht.readTemperature();
   if (isnan(hum) || isnan(temp)) {
-    Serial.println(F("DHT Read Fail"));
+    DEBUG_PRINTLN(F("DHT Read Fail"));
     return;
   }
   manageStats(temp, hum);
@@ -356,7 +368,7 @@ void readData() {
 void sendData() {
   lcdClearLine(3);
   if ((WiFi.status() != WL_CONNECTED) || (!client.connect(host, httpsPort))) {
-    Serial.println(F("Connection failed"));
+    DEBUG_PRINTLN(F("Connection failed"));
     lcd.print(F("CLOUD LOG ERR"));
     //Log data su SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
     logData();
@@ -372,7 +384,7 @@ void sendData() {
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
-      Serial.println(F("Logged to Google Sheets"));
+      DEBUG_PRINTLN(F("Logged to Google Sheets"));
       lcd.print(F("CLOUD LOG OK"));
       break;
     }
@@ -395,12 +407,12 @@ void logData() {
     dataFile.println(dataString);
     dataFile.close();
     // print to the Serial port too:
-    Serial.print(F("LoggedToSD: "));
-    Serial.println(dataString);
+    DEBUG_PRINT(F("LoggedToSD: "));
+    DEBUG_PRINTLN(dataString);
   }
   // if the file isn't open, pop up an error:
   else {
-    Serial.println(F("error opening log file"));
+    DEBUG_PRINTLN(F("error opening log file"));
     sdOK = false;
     needRecovery--;
   }
@@ -424,7 +436,7 @@ String getLogFile(bool write) {
       checkFile.close();
     }
   }
-  Serial.println(String(needRecovery) += ".txt");
+  DEBUG_PRINTLN(String(needRecovery) += ".txt");
   return String(needRecovery) += ".txt";
 }
 
@@ -438,13 +450,13 @@ void deleteSDLog() {
       break;
     }
     entry.close();
-    Serial.print(entry.name());
+    DEBUG_PRINT(entry.name());
     if (SD.remove(entry.name())) {
-      Serial.println(": removed");
+      DEBUG_PRINTLN(": removed");
       needRecovery--;
     }
     else {
-      Serial.println(": not removed");
+      DEBUG_PRINTLN(": not removed");
     }
   }
   EEPROM.write(0, needRecovery);
@@ -463,7 +475,7 @@ void recovery() {
       String humS = myFile.readStringUntil('\n');
 
       if (!client.connect(host, httpsPort)) {
-        Serial.println(F("Recovery failed"));
+        DEBUG_PRINTLN(F("Recovery failed"));
         lcdClearLine(3);
         lcd.print(F("Recovery FAILED"));
         return;
@@ -471,7 +483,7 @@ void recovery() {
       String url = "/macros/s/" + GAS_ID + "/exec?temp=" + tempS + "&hum=" + humS + "&date=" + dateS;
       url.replace("\n", ""); //Removes newlines
       url.replace("\r", "");
-      Serial.println(F(url));
+      DEBUG_PRINTLN(F(url));
 
       client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                    "Host: " + host + "\r\n" +
@@ -479,10 +491,10 @@ void recovery() {
 
       while (client.connected()) {
         String line = client.readStringUntil('\n');
-        //Serial.println(line);
+        //DEBUG_PRINTLN(line);
         if (line == "\r") {
           recoveredLines++;
-          Serial.println(F("Line recovered"));
+          DEBUG_PRINTLN(F("Line recovered"));
           lcdClearLine(3);
           lcd.print(recoveredLines);
           lcd.print(F(" recovered"));
@@ -492,13 +504,13 @@ void recovery() {
     }
     myFile.close();
     if (SD.remove(myFile.name()))
-      Serial.println("REMOVED OK");
+      DEBUG_PRINTLN("REMOVED OK");
     //If going backwards I haven't reached file n 0, I keep going backwards
     needRecovery--;
     if (needRecovery > 0) {
       recovery();
     } else { //Ho finito il recovery di tutti i file
-      Serial.println(F("Successful Recovery"));
+      DEBUG_PRINTLN(F("Successful Recovery"));
       lcdClearLine(3);
       recoveredLines = 0;
       lcd.print(F("Recovery OK"));
@@ -511,7 +523,7 @@ void recovery() {
       lcdClearLine(3);
       lcd.print(F(String(needRecovery) += ": Recovery SUCCESS"));
     } else {
-      Serial.println(F("error opening log file"));
+      DEBUG_PRINTLN(F("error opening log file"));
       lcd.print(F("Recovery FAILED"));
       sdOK = false;
     }
@@ -590,7 +602,7 @@ void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
-    //Serial.println("WiFi Down");
+    //DEBUG_PRINTLN("WiFi Down");
     lcdClearLine(1);
     WiFi.begin(ssid, pass);
     printWifiData();
@@ -610,7 +622,7 @@ void resetSheets() {
   lcdClearLine(3);
   lcd.setCursor(4, 3);
   if (!client.connect(host, httpsPort)) {
-    Serial.println(F("Connection failed"));
+    DEBUG_PRINTLN(F("Connection failed"));
     lcd.print(F("CLOUD RESET FAIL"));
     return;
   }
@@ -623,7 +635,7 @@ void resetSheets() {
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
-      Serial.println(F("Google Sheets Reset: SUCCESS"));
+      DEBUG_PRINTLN(F("Google Sheets Reset: SUCCESS"));
       lcd.print(F("CLOUD RESET SUCCESS"));
       break;
     }
@@ -634,7 +646,7 @@ void resetSheets() {
 
 // print your board's IP address:
 void printWifiData() {
-  Serial.println(WiFi.localIP());
+  DEBUG_PRINTLN(WiFi.localIP());
 }
 
 //Clears line 'i' and moves the cursor back to the start of that line
