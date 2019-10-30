@@ -22,7 +22,7 @@
 #define SDLED 4
 //#define CONTROLLED 10//DEBUGGING
 
-#define DEBUG
+//#define DEBUG
 //Allows to toggle SERIAL PRINT on or off simply defining (or not defining) Debug (^ above)
 #ifdef DEBUG
  #define DEBUG_PRINT(x)     Serial.print(x)
@@ -547,27 +547,37 @@ BLYNK_WRITE(V2)  {
 }
 
 //:::::::::::::::FOLLOWING FUNCTIONS HANDLE TIME&DATE STRINGS:::::::::::::
+//Turns a single digit number in a two digits string, or number in string if >=2 digits 
+String twoDigits(uint8_t input) {
+  if(input <10) {
+    String inputString = String(input);
+    String zero = "0";
+    return zero+=inputString;
+  }
+  return String(input);
+}
+
 String printTime() {
   String orario = "";
-  orario += myRTC.hours;
+  orario += twoDigits(myRTC.hours);
   orario += ":";
-  orario += myRTC.minutes;
+  orario += twoDigits(myRTC.minutes);
   return orario;
 }
 
 String printDate() {
   String orario = "";
-  orario += myRTC.dayofmonth;
+  orario += twoDigits(myRTC.dayofmonth);
   orario += "/";
-  orario += myRTC.month;
+  orario += twoDigits(myRTC.month);
   orario += "/";
   orario += myRTC.year;
   orario += "-";
-  orario += myRTC.hours;
+  orario += twoDigits(myRTC.hours);
+  orario += ":";
+  orario += twoDigits(myRTC.minutes);
   orario += ".";
-  orario += myRTC.minutes;
-  orario += ".";
-  orario += myRTC.seconds;
+  orario += twoDigits(myRTC.seconds);
   return orario;
 }
 //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
