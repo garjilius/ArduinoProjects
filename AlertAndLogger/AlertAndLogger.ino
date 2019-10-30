@@ -32,8 +32,8 @@ hd44780_I2Cexp lcd;
 //30000 byte = about 1000 lines
 #define MAXLOGSIZE 30000
 
-#define DHTTYPE DHT11     // DHT 11
-//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
+//#define DHTTYPE DHT11     // DHT 11
+#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
 WiFiSSLClient client;
 WiFiServer server(80);
@@ -100,6 +100,7 @@ void loop() {
       digitalWrite(SDLED, LOW);  // indicate via LED
     }
   }
+
 
   //:::::::::::::::::::::::::::::::::WEBSERVER:::::::::::::::::::::::::::::::
   WiFiClient client = server.available();   // listen for incoming clients
@@ -265,13 +266,13 @@ void setup() {
   server.begin();   // start the web server on port 80
   //Display Initialization
   lcd.begin(20, 4);
-  lcd.setCursor(7, 2);
+  lcd.setCursor(8, 2);
   //SD Initialization
   sdOK = SD.begin(chipSelect);
   if (!sdOK) {
     //Commented out as it will be printed in the loop function
     //Serial.println(F("SD Card failed"));
-    lcd.print(F("- SD Err"));
+    lcd.print(F(" - SD Err"));
   } else {
     Serial.println(F("SD Card initialized."));
     lcd.print(F(" - SD OK"));
@@ -286,23 +287,27 @@ void setup() {
   currentDay = myRTC.dayofmonth;
 
   /*Reads from eeprom if there's need for recovery or not.
-  255 is EEPROM's default value. 
-  I check if there's a file named 255.txt, given that recovery files get incremental names.
-  If such file doesn't exist, i have confirmation that 255 is just the default value and take it back to 0 */
-    EEPROM.get(0, needRecovery);
-  if (needRecovery == 255) {
+    255 is EEPROM's default value.
+    I check if there's a file named 255.txt, given that recovery files get incremental names.
+    If such file doesn't exist, i have confirmation that 255 is just the default value and take it back to 0.
+    If the retrieved value is less than 0, it also means there's been a reading problem and the value is set to 0
+    */
+  EEPROM.get(0, needRecovery);
+  if (needRecovery == 255 || needRecovery < 0) {
     if (!SD.exists("255.txt")) {
-    needRecovery = 0;
-    EEPROM.write(0, needRecovery);
+      needRecovery = 0;
+      EEPROM.write(0, needRecovery);
     }
   }
 
-  
+
   //Print number of files that need recovery
   Serial.print(F("Need recovery: "));
   Serial.println(needRecovery);
 
   printWifiData();
+  handleDisplay();
+  checkWifi();
 
   /*
     String fv = WiFi.firmwareVersion();
@@ -318,7 +323,7 @@ void setup() {
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
-  timer.setInterval(15000, handleDisplay);
+  timer.setInterval(5000, handleDisplay);
   timer.setInterval(60000, checkWifi);
   timer.setInterval(1800000L, handleReports);
 }
@@ -553,7 +558,7 @@ void handleDisplay() {
   lcd.setCursor(0, 1);
   lcd.print(F("IP: "));
   lcd.print(WiFi.localIP());
-  lcd.setCursor(7, 2);
+  lcd.setCursor(8, 2);
   if (!sdOK) {
     lcd.print(F(" - SD Err"));
   } else {
@@ -677,7 +682,7 @@ void sendReport() {
   report += numMov;
   //After sending the email, stats get reset
   Blynk.email(F("Daily report"), report);
-  lcdClearline(0);
+  lcdClearLine(0);
   lcd.print("Report Sent");
   resetStats();
 }
