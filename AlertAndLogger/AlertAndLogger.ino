@@ -32,8 +32,8 @@ hd44780_I2Cexp lcd;
 //30000 byte = about 1000 lines
 #define MAXLOGSIZE 30000
 
-//#define DHTTYPE DHT11     // DHT 11
-#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
+#define DHTTYPE DHT11     // DHT 11
+//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
 WiFiSSLClient client;
 WiFiServer server(80);
@@ -48,6 +48,7 @@ float temp;
 int humLimit = 75; //Preset treshold for humidity and temperature. Can override via blynk app
 int tempLimit = 25;
 int timerGoogle;
+int recoveredLines = 0;
 bool sdOK = false;
 long int logInterval = 900000L; //Preset log interval. Can override via arduino web server
 int needRecovery = 0; //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
@@ -163,6 +164,8 @@ void loop() {
             myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
             currentDay = myRTC.dayofmonth;
             Serial.println(F("Time Set"));
+            lcdClearLine(3);
+            lcd.print(F("Time Set"));
           }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
@@ -188,6 +191,9 @@ void loop() {
             timerGoogle = timer.setInterval(logInterval, sendData);
             Serial.print(F("Log Interval set to: "));
             Serial.println(logInterval);
+            lcdClearLine(3);
+            lcd.print("INTERVAL: ");
+            lcd.print(minInterval);
           }
           readString = ""; //Reset readString
         }
@@ -474,7 +480,11 @@ void recovery() {
         String line = client.readStringUntil('\n');
         //Serial.println(line);
         if (line == "\r") {
+          recoveredLines++;
           Serial.println(F("Line recovered"));
+          lcdClearLine(3);
+          lcd.print(recoveredLines);
+          lcd.print(F(" recovered"));
           break;
         }
       }
@@ -488,6 +498,9 @@ void recovery() {
       recovery();
     } else { //Ho finito il recovery di tutti i file
       Serial.println(F("Successful Recovery"));
+      lcdClearLine(3);
+      recoveredLines = 0;
+      lcd.print(F("Recovery OK"));
     }
 
   } else {
@@ -583,7 +596,7 @@ void checkWifi() {
     //server.begin();
   } else {
     digitalWrite(WIFILED, HIGH);
-    lcd.print(F("WiFi OK"));
+    lcd.print(F("WiFi OK "));
   }
   //If WIFI is connected but blynk isn't, I can try to reconnect to blynk servers
   if ((WiFi.status() == WL_CONNECTED) && (!Blynk.connected())) {
