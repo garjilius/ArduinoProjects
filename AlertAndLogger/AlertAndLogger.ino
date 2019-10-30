@@ -179,6 +179,7 @@ void loop() {
             DEBUG_PRINTLN(F("Time Set"));
             lcdClearLine(3);
             lcd.print(F("Time Set"));
+            handleDisplay();
           }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
