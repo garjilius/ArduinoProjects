@@ -141,7 +141,8 @@ void loop() {
           interval += minInterval;
           interval += ">";
           client.println(interval);
-          client.println(F("<input type=\"submit\" class=\"button button1\"></form>"));
+          client.println(F("<input type=\"submit\" value=\"Set Log Interval\" class=\"button button1\"></form>"));
+          client.println(F("<div id='time'></div>"));
           client.println(F("<div id='leg'></div>"));
           client.println(F("</BODY>"));
           client.println(F("</HTML>"));
@@ -297,7 +298,7 @@ void setup() {
     I check if there's a file named 255.txt, given that recovery files get incremental names.
     If such file doesn't exist, i have confirmation that 255 is just the default value and take it back to 0.
     If the retrieved value is less than 0, it also means there's been a reading problem and the value is set to 0
-    */
+  */
   EEPROM.get(0, needRecovery);
   if (needRecovery == 255 || needRecovery < 0) {
     if (!SD.exists("255.txt")) {
@@ -393,7 +394,7 @@ void logData() {
   if (dataFile) {
     dataFile.println(dataString);
     dataFile.close();
-    // print to the serial port too:
+    // print to the Serial port too:
     Serial.print(F("LoggedToSD: "));
     Serial.println(dataString);
   }
