@@ -330,7 +330,7 @@ void setup() {
   timer.setInterval(3000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
   timer.setInterval(20000, handleDisplay);
-  timer.setInterval(60000, checkWifi);
+  timer.setInterval(120000, checkWifi);
   timer.setInterval(1800000L, handleReports);
 }
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
