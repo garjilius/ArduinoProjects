@@ -206,7 +206,7 @@ void loop() {
             DEBUG_PRINT(F("Log Interval set to: "));
             DEBUG_PRINTLN(logInterval);
             lcdClearLine(3);
-            lcd.print("INTERVAL: ");
+            lcd.print(F("Log Interval: "));
             lcd.print(minInterval);
           }
           readString = ""; //Reset readString
@@ -386,7 +386,8 @@ void sendData() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       DEBUG_PRINTLN(F("Logged to Google Sheets"));
-      lcd.print(F("CLOUD LOG OK"));
+      lcd.print(F("CLOUD LOG "));
+      lcd.print(printTime());
       break;
     }
   }
@@ -601,7 +602,7 @@ void handleDisplay() {
   } else {
     lcd.print(F(" - SD OK"));
   }
-  lcd.setCursor(13, 3);
+  lcd.setCursor(17, 3);
   lcd.print(F("("));
   lcd.print(needRecovery); //Number of files that need recovery
   lcd.print(F(")"));
