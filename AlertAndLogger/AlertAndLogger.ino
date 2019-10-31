@@ -171,7 +171,6 @@ void loop() {
             DEBUG_PRINTLN(F("Time Set"));
             lcdClearLine(3);
             lcd.print(F("Time Set"));
-            handleDisplay();
           }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
@@ -623,7 +622,6 @@ void checkWifi() {
 //Delete all lines in Google Sheets Log
 void resetSheets() {
   lcdClearLine(3);
-  lcd.setCursor(4, 3);
   if (!client.connect(host, httpsPort)) {
     DEBUG_PRINTLN(F("Connection failed"));
     lcd.print(F("CLOUD RESET FAIL"));
@@ -639,7 +637,7 @@ void resetSheets() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       DEBUG_PRINTLN(F("Google Sheets Reset: SUCCESS"));
-      lcd.print(F("CLOUD RESET SUCCESS"));
+      lcd.print(F("CLOUD RESET OK"));
       break;
     }
   }
