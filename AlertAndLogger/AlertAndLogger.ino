@@ -572,7 +572,7 @@ String printDate() {
   orario += myRTC.year;
   orario += "-";
   orario += twoDigits(myRTC.hours);
-  orario += ":";
+  orario += ".";
   orario += twoDigits(myRTC.minutes);
   orario += ".";
   orario += twoDigits(myRTC.seconds);
