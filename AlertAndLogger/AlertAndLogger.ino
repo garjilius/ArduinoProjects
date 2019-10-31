@@ -596,7 +596,7 @@ void handleDisplay() {
   if (!sdOK) {
     lcd.print(F(" - SD Err"));
   } else {
-    lcd.print(F(" - SD OK"));
+    lcd.print(F(" - SD OK "));
   }
   lcd.setCursor(17, 3);
   lcd.print(F("("));
