@@ -20,7 +20,6 @@
 #define chipSelect  8 //microSD card pin
 #define WIFILED 3
 #define SDLED 4
-//#define CONTROLLED 10//DEBUGGING
 
 //#define DEBUG
 //Allows to toggle SERIAL PRINT on or off simply defining (or not defining) Debug (^ above)
@@ -95,13 +94,6 @@ void loop() {
   Blynk.run();
   timer.run();
   myRTC.updateTime();
-  //DEBUGGING: BLINK A LED. SLOWS DOWN ARDUINO, REMOVE ASAP!
-  //:::::::::::::::::::::::::::::::
-  /*digitalWrite(CONTROLLED, HIGH);
-  delay(500);
-  digitalWrite(CONTROLLED, LOW);
-  delay(500); */
-  //:::::::::::::::::::::::::::::::
 
   //Retries to initialize SD if failed.
   //If SD is not working, sd led comes up, then it is turned off again if SD starts working
@@ -278,7 +270,6 @@ void setup() {
   Serial.begin(9600);
   pinMode(SDLED, OUTPUT);
   pinMode(WIFILED, OUTPUT);
-  //pinMode(CONTROLLED, OUTPUT); //DEBUGGING
   pinMode(DHTPIN, INPUT);
   pinMode(IRPIN, INPUT);
   WiFi.setTimeout(5000);
