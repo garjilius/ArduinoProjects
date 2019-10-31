@@ -24,13 +24,13 @@
 //#define DEBUG
 //Allows to toggle SERIAL PRINT on or off simply defining (or not defining) Debug (^ above)
 #ifdef DEBUG
- #define DEBUG_PRINT(x)     Serial.print(x)
- #define DEBUG_PRINTDEC(x)  Serial.print(x, DEC)
- #define DEBUG_PRINTLN(x)   Serial.println(x)
+#define DEBUG_PRINT(x)     Serial.print(x)
+#define DEBUG_PRINTDEC(x)  Serial.print(x, DEC)
+#define DEBUG_PRINTLN(x)   Serial.println(x)
 #else
- #define DEBUG_PRINT(x)
- #define DEBUG_PRINTDEC(x)
- #define DEBUG_PRINTLN(x) 
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTDEC(x)
+#define DEBUG_PRINTLN(x)
 #endif
 
 hd44780_I2Cexp lcd;
@@ -445,6 +445,7 @@ void deleteSDLog() {
     DEBUG_PRINT(entry.name());
     if (SD.remove(entry.name())) {
       DEBUG_PRINTLN(": removed");
+      lcd.print(F("SD RESET OK"));
       needRecovery--;
     }
     else {
@@ -539,12 +540,12 @@ BLYNK_WRITE(V2)  {
 }
 
 //:::::::::::::::FOLLOWING FUNCTIONS HANDLE TIME&DATE STRINGS:::::::::::::
-//Turns a single digit number in a two digits string, or number in string if >=2 digits 
+//Turns a single digit number in a two digits string, or number in string if >=2 digits
 String twoDigits(uint8_t input) {
-  if(input <10) {
+  if (input < 10) {
     String inputString = String(input);
     String zero = "0";
-    return zero+=inputString;
+    return zero += inputString;
   }
   return String(input);
 }
