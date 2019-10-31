@@ -327,14 +327,14 @@ void setup() {
 
   //First logging happens 30s after boot, regardless of logging interval settings. Display initialized after 4s
   timer.setTimeout(30000, sendData);
-  timer.setTimeout(4000, handleDisplay);
-  timer.setTimeout(4500, checkWifi);
+  timer.setTimeout(2000, handleDisplay);
+  timer.setTimeout(2100, checkWifi);
 
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
-  timer.setInterval(20000, handleDisplay);
-  timer.setInterval(120000, checkWifi);
+  timer.setInterval(10000, handleDisplay);
+  timer.setInterval(60000, checkWifi);
   timer.setInterval(1800000L, handleReports);
 }
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -434,18 +434,23 @@ String getLogFile(bool write) {
 
 //Delete all SD Log files
 void deleteSDLog() {
+  lcdClearLine(3);
+  if(needRecovery == 0) {
+    lcd.print("0 to delete");
+    return;
+  }
   File root = SD.open("/");
   while (true) {
     File entry =  root.openNextFile();
     if (! entry) {
       // no more files, SD Empty
+          lcd.print("Files deletd");
       break;
     }
     entry.close();
     DEBUG_PRINT(entry.name());
     if (SD.remove(entry.name())) {
       DEBUG_PRINTLN(": removed");
-      lcd.print(F("SD RESET OK"));
       needRecovery--;
     }
     else {
@@ -490,7 +495,7 @@ void recovery() {
           DEBUG_PRINTLN(F("Line recovered"));
           lcdClearLine(3);
           lcd.print(recoveredLines);
-          lcd.print(F(" recovered"));
+          lcd.print(F(" log recovered"));
           break;
         }
       }
