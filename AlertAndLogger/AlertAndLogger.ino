@@ -435,7 +435,7 @@ String getLogFile(bool write) {
 //Delete all SD Log files
 void deleteSDLog() {
   lcdClearLine(3);
-  if(needRecovery == 0) {
+  if (needRecovery == 0) {
     lcd.print("0 to delete");
     return;
   }
@@ -444,7 +444,7 @@ void deleteSDLog() {
     File entry =  root.openNextFile();
     if (! entry) {
       // no more files, SD Empty
-          lcd.print("Files deletd");
+      lcd.print("Files deletd");
       break;
     }
     entry.close();
@@ -672,8 +672,13 @@ void lcdClearLine(int i) {
 
 //Check if log lines need to be synced from the SD card to google sheets
 void recoveryManager() {
-  if (needRecovery >= 1)
+  if (needRecovery >= 1) {
     recovery();
+  }
+  else {
+    lcd.clearline(3);
+    lcd.print("Rec. Not Needed");
+  }
 }
 
 //Keeps min and max temperature updated
