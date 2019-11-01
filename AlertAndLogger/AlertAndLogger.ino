@@ -715,7 +715,7 @@ void sendReport() {
   report += numMov;
   //After sending the email, stats get reset
   Blynk.email(F("Daily report"), report);
-  lcdClearLine(0);
+  lcdClearLine(3);
   lcd.print("Report Sent");
   resetStats();
 }
