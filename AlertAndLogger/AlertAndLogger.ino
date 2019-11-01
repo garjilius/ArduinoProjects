@@ -604,7 +604,7 @@ void handleDisplay() {
   lcd.print(F(")"));
 }
 
-//If WIFI is not working, wifi led is switched off and we attempt to reconnect to wifi and to blynk servers
+//If WIFI is not working, we attempt to reconnect to wifi and to blynk servers
 void checkWifi() {
   lcd.setCursor(0, 2);
   if (WiFi.status() != WL_CONNECTED) {
