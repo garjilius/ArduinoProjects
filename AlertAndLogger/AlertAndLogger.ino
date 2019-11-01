@@ -444,7 +444,7 @@ void deleteSDLog() {
     File entry =  root.openNextFile();
     if (! entry) {
       // no more files, SD Empty
-      lcd.print("Files deletd");
+      lcd.print("All Files del.");
       break;
     }
     entry.close();
