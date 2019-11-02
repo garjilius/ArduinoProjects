@@ -676,7 +676,7 @@ void recoveryManager() {
     recovery();
   }
   else {
-    lcd.clearline(3);
+    lcdClearLine(3);
     lcd.print("Rec. Not Needed");
   }
 }
