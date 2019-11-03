@@ -33,10 +33,10 @@ function toTwoDigits(elemento) {
 }
 
 window.onload = function() {
-	var body = document.getElementById('mainBody');
-	var div = document.getElementById('leg');
+	var mainBody = document.getElementById('mainBody');
+	var legend = document.getElementById('leg');
 	var time = document.getElementById('time');
 	mainBody.innerHTML = "<H1><i class=\"fas fa-cogs\"></i> Arduino Control Panel <i class=\"fas fa-cogs\"></i></H1><hr/><H2><i class=\"fas fa-user-tie\"></i> Welcome, Emanuele <i class=\"fas fa-user-tie\"></i></H2><br/><img src=\"https://dl.dropbox.com/s/xuj9q90zsbdyl2n/LogoUnisa.png?dl=0\" style=\"width:200px;height:200px;\"><br/><br/><br/><a href=\"/?deleteSD\">Delete SD Logs</a><a href=\"/?reset\">Delete Google Sheets Logs</a><a href=\"/?recovery\">Recovery</a><br/><br/><a href=\"/?logNow\">Log Now!</a><a href=\"/?sendReport\">Send Report!</a><br/><br/><a href=\"/?\">Reload Page</a><br/><br/><br/>";
 	time.innerHTML = "<i class=\"far fa-clock\"></i><input placeholder=\"DD-MM-YYYY HH:MM:SS\" type=\"text\" id=\"dateInput\" size=25 name=\"date\"><button class=\"button button2\"onclick=\"getManualTime()\">Set Time Manually</button><button class=\"button button2\"onclick=\"getTime()\">Set Time Automatically</button>";
-	div.innerHTML = "<br><br><b><i class=\"fas fa-sd-card\"></i> Delete SD Logs:</b> deletes log files from the SD Card<br/><b><i class=\"fas fa-table\"></i> Delete Google Sheets Logs:</b> deletes logs from Google Sheets<br/><b><i class=\"fas fa-sync-alt\"></i> Recovery:</b> Syncs data that has been logged when offline to Google Sheets<br/><b><i class=\"fas fa-file-import\"></i> Log Now:</b> Logs last sensor data to Google Sheets<br/><b><i class=\"fas fa-paper-plane\"></i> Send Report:</b> Sends minimum and maximum values for temperature and humidity of the current day via mail<br><b><i class=\"far fa-clock\"></i> Set Time:</b> Uses Client's date or manual string to set Arduino's RTC Clock";
+	legend.innerHTML = "<br><br><b><i class=\"fas fa-sd-card\"></i> Delete SD Logs:</b> deletes log files from the SD Card<br/><b><i class=\"fas fa-table\"></i> Delete Google Sheets Logs:</b> deletes logs from Google Sheets<br/><b><i class=\"fas fa-sync-alt\"></i> Recovery:</b> Syncs data that has been logged when offline to Google Sheets<br/><b><i class=\"fas fa-file-import\"></i> Log Now:</b> Logs last sensor data to Google Sheets<br/><b><i class=\"fas fa-paper-plane\"></i> Send Report:</b> Sends minimum and maximum values for temperature and humidity of the current day via mail<br><b><i class=\"far fa-clock\"></i> Set Time:</b> Uses Client's date or manual string to set Arduino's RTC Clock";
 }
