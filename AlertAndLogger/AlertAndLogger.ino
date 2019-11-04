@@ -22,7 +22,8 @@
 #define SDLED 4
 
 //#define DEBUG
-//Allows to toggle SERIAL PRINT on or off simply defining (or not defining) Debug (^ above)
+//Allows to toggle SERIAL PRINT on or off simply defining (or not defining) Debug (^ above).
+//Disabling Debug saves about 2-3% of memory on Arduino
 #ifdef DEBUG
 #define DEBUG_PRINT(x)     Serial.print(x)
 #define DEBUG_PRINTDEC(x)  Serial.print(x, DEC)
@@ -94,7 +95,7 @@ void loop() {
   Blynk.run();
   timer.run();
   myRTC.updateTime();
-
+  
   //Retries to initialize SD if failed.
   //If SD is not working, sd led comes up, then it is turned off again if SD starts working
   if (!sdOK) {
@@ -167,6 +168,7 @@ void loop() {
             date[5] = readString.substring(31, 33).toInt(); //secondo
             // seconds, minutes, hours, day of the week, day of the month, month, year
             myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
+            myRTC.updateTime();
             currentDay = myRTC.dayofmonth;
             DEBUG_PRINTLN(F("Time Set"));
             lcdClearLine(3);
@@ -192,6 +194,7 @@ void loop() {
             //Getting the useful data between startindex and endindex using indexOf
             int minInterval = readString.substring(readString.indexOf("=") + 1, readString.indexOf("HTTP") - 1).toInt();
             logInterval = 60L * 1000L * minInterval; //Force value to Long
+            //To change the timer for logging, we have to delete it and set it up again
             timer.deleteTimer(timerGoogle);
             timerGoogle = timer.setInterval(logInterval, sendData);
             DEBUG_PRINT(F("Log Interval set to: "));
@@ -224,7 +227,11 @@ void sendSensor() {
     return;
   }
 
-  //Handle sensors' notifications
+  /* Handle sensors' notifications.
+      After Sending a notification for humidity or temperature,
+      further notifications won't be sent if the temp/hum value hasn't gone at least once below the set treshold.
+      For movement, an interval between two notification has been set to 1 minute.
+  */
   if (hum > humLimit) {
     if (notificationAllowed[EVHUM] == true) {
       notificationAllowed[EVHUM] = false; //Disable notifications...
