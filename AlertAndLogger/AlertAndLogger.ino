@@ -138,7 +138,7 @@ void loop() {
           client.println(F("</HEAD>"));
           client.println(F("<BODY>"));
           client.println(F("<div id='mainBody'></div>"));
-          client.println(F("<form action="">"));
+          client.println(F("<fieldset><legend>SET TIME</legend><form action="">"));
           client.println(F("<i class=\"fas fa-tachometer-alt\"></i> Frequenza Logging (minuti)"));
           int minInterval = logInterval / 60;
           minInterval = minInterval / 1000;
@@ -147,7 +147,8 @@ void loop() {
           interval += ">";
           client.println(interval);
           client.println(F("<input type=\"submit\" value=\"Set Log Interval\" class=\"button button1\"></form>"));
-          client.println(F("<div id='time'></div>"));
+          client.println(F("<div id='time'></div></fieldset>"));
+          client.println(F("<div id='reload'></div>"));
           client.println(F("<div id='leg'></div>"));
           client.println(F("</BODY>"));
           client.println(F("</HTML>"));
@@ -195,6 +196,12 @@ void loop() {
           }
           if (readString.indexOf("?lcdon") > 0) {
             lcd.on();
+          }
+          if (readString.indexOf("?lcdbacklightoff") > 0) {
+            lcd.noBacklight();
+          }
+          if (readString.indexOf("?lcdbacklighton") > 0) {
+            lcd.backlight();
           }
           if (readString.indexOf("?logInterval") > 0) {
             //Getting the useful data between startindex and endindex using indexOf
