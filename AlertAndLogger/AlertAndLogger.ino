@@ -168,7 +168,7 @@ void loop() {
             date[5] = readString.substring(31, 33).toInt(); //secondo
             // seconds, minutes, hours, day of the week, day of the month, month, year
             myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
-            myRTC.updateTime();
+            myRTC.updateTime(); //Need to update the RTC module before setting currentDay to its 'Day'
             currentDay = myRTC.dayofmonth;
             DEBUG_PRINTLN(F("Time Set"));
             lcdClearLine(3);
@@ -300,7 +300,7 @@ void setup() {
 
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
-  myRTC.setDS1302Time(00, 30, 14, 5, 30, 10, 2019);
+  myRTC.setDS1302Time(00, 00, 14, 5, 7, 11, 2019);
   currentDay = myRTC.dayofmonth;
 
   /*Reads from eeprom if there's need for recovery or not.
@@ -346,12 +346,13 @@ void setup() {
 }
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-//Re Enables movement notifications
+//Re Enables movement notifications.
+//Need to have a specific function to do so as you need a void function to make "timer" work
 void enableMovementNotification() {
   notificationAllowed[EVMOV] = true;
 }
 
-//Reads data from DHT sensor
+//Reads data from DHT sensor & Calls function to keep stats update
 void readData() {
   hum = dht.readHumidity();
   temp = dht.readTemperature();
@@ -394,13 +395,13 @@ void sendData() {
 //Logs data to SD
 void logData() {
   String dataString;
-  dataString += printDate(); //Andrà riattivato quando connetterò l'orologio
+  dataString += printDate();
   dataString += " ";
   dataString += temp;
   dataString += " ";
   dataString += hum;
 
-  File dataFile = SD.open(getLogFile(1), FILE_WRITE);
+  File dataFile = SD.open(getLogFile(1), FILE_WRITE); //Gets the correct file name. Need it because log file have incremental names
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.println(dataString);
@@ -442,11 +443,14 @@ String getLogFile(bool write) {
 //Delete all SD Log files
 void deleteSDLog() {
   lcdClearLine(3);
+  //If no files need to be recovered, return
   if (needRecovery == 0) {
     lcd.print("0 to delete");
     return;
   }
   File root = SD.open("/");
+  //Delete every file. It obviously assumes all files on the SD card are recovery logs. 
+  //No check is made on files to save memory on arduino
   while (true) {
     File entry =  root.openNextFile();
     if (! entry) {
@@ -475,6 +479,7 @@ void recovery() {
   File myFile = SD.open(getLogFile(0));
   if (myFile) {
     while (myFile.available()) {
+      //Every line contains date, temperature and humidity. I get the line and then split it in the values I need
       String dateS = myFile.readStringUntil(' ');
       String tempS = myFile.readStringUntil(' ');
       String humS = myFile.readStringUntil('\n');
@@ -562,6 +567,7 @@ String twoDigits(uint8_t input) {
   return String(input);
 }
 
+//Returns time string in HH:MM format
 String printTime() {
   String orario = "";
   orario += twoDigits(myRTC.hours);
@@ -570,6 +576,8 @@ String printTime() {
   return orario;
 }
 
+//Returns date string in DD/MM/YYYY-HH.MM.SS format.
+//ANY change to the format will require handling the new format in Google App Script when logging to Google Sheets
 String printDate() {
   String orario = "";
   orario += twoDigits(myRTC.dayofmonth);
@@ -587,7 +595,8 @@ String printDate() {
 }
 //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-//Handles info on the i2c display
+//Handles info on the LCD i2c display
+//This function assumes a 20x4 display
 void handleDisplay() {
   lcd.setCursor(0, 0);
   lcd.print(printTime());
@@ -655,8 +664,6 @@ void resetSheets() {
     }
   }
 }
-
-//::::::::::::::::::UTILITY FUNCTIONS::::::::::::::::::::::::::::::::::
 
 // print your board's IP address:
 void printWifiData() {
