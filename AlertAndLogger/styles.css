@@ -4,6 +4,14 @@ margin:60px 0px; padding:0px;
 text-align:center;
 }
 
+fieldset {
+  padding: 1em;
+  font:80%/1 sans-serif;
+  width: 60%;
+  margin: auto;
+  
+  }
+
 h1 { 
 	text-align: center;
 	font-family: 
