@@ -138,7 +138,7 @@ void loop() {
           client.println(F("</HEAD>"));
           client.println(F("<BODY>"));
           client.println(F("<div id='mainBody'></div>"));
-          client.println(F("<fieldset><legend>SET TIME</legend><form action="">"));
+          client.println(F("<fieldset><legend><i class=\"far fa-clock\"></i> SET TIME <i class=\"far fa-clock\"></i></legend><form action="">"));
           client.println(F("<i class=\"fas fa-tachometer-alt\"></i> Frequenza Logging (minuti)"));
           int minInterval = logInterval / 60;
           minInterval = minInterval / 1000;
