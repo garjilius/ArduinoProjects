@@ -95,7 +95,7 @@ void loop() {
   Blynk.run();
   timer.run();
   myRTC.updateTime();
-  
+
   //Retries to initialize SD if failed.
   //If SD is not working, sd led comes up, then it is turned off again if SD starts working
   if (!sdOK) {
@@ -189,6 +189,12 @@ void loop() {
           if (readString.indexOf("?sendReport") > 0) {
             DEBUG_PRINTLN("Send report...");
             sendReport();
+          }
+          if (readString.indexOf("?lcdoff") > 0) {
+            lcd.off();
+          }
+          if (readString.indexOf("?lcdon") > 0) {
+            lcd.on();
           }
           if (readString.indexOf("?logInterval") > 0) {
             //Getting the useful data between startindex and endindex using indexOf
@@ -449,7 +455,7 @@ void deleteSDLog() {
     return;
   }
   File root = SD.open("/");
-  //Delete every file. It obviously assumes all files on the SD card are recovery logs. 
+  //Delete every file. It obviously assumes all files on the SD card are recovery logs.
   //No check is made on files to save memory on arduino
   while (true) {
     File entry =  root.openNextFile();
