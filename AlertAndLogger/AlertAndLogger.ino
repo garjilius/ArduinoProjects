@@ -41,7 +41,7 @@ hd44780_I2Cexp lcd;
 #define EVTEMP 1
 #define EVMOV 2
 
-//30000 byte = about 1000 lines
+//30000 byte = about 1000 lines. This define the max size of log files
 #define MAXLOGSIZE 30000
 
 #define DHTTYPE DHT11     // DHT 11
