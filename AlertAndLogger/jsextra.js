@@ -2,10 +2,11 @@
 function getTime() {
 	var today = new Date();
 	var dateTime = toTwoDigits(today.getDay())+'-'+toTwoDigits(today.getDate())+'-'+toTwoDigits(today.getMonth()+1)+'-'+today.getFullYear()+'+'+toTwoDigits(today.getHours())+':'+toTwoDigits(today.getMinutes())+':'+toTwoDigits(today.getSeconds());
-	//Ricarico la pagina passando la stringa formattata in get, così da recuperarla con arduino
+	//Reloads page with date string in GET, so Arduino can recover the string and process it
 	window.location.href = '?date='+dateTime;
 }
 
+//When the user inputs date and time manually, it splits the string in day,month ecc and creates a new date
 function getManualTime() {
 	var input = document.getElementById('dateInput');
 	var stringa = input.value;
@@ -20,10 +21,11 @@ function getManualTime() {
 	var today = new Date(year, month, day, hours, minutes, seconds, 0)
 		
 	dateTime = toTwoDigits(today.getDay())+'-'+toTwoDigits(today.getDate())+'-'+toTwoDigits(today.getMonth())+'-'+today.getFullYear()+'+'+toTwoDigits(today.getHours())+':'+toTwoDigits(today.getMinutes())+':'+toTwoDigits(today.getSeconds());	
+	//Reloads page with date string in GET, so Arduino can recover the string and process it
 	window.location.href = '?date='+dateTime;
 }
 
-//In modo che se sono le 8, le segna come 08. Così posso splittare la stringa in posti fissi
+//Makes every number a two digit number. It allows us to split the date string at fixed positions
 function toTwoDigits(elemento) {
 	var el = elemento.toString();
 	if(el.length<2) {
@@ -32,6 +34,8 @@ function toTwoDigits(elemento) {
 	return el;
 }
 
+//Fill preset divs on page load. 
+//Having HTML here allow us to reduce computational requirements on arduino and load time
 window.onload = function() {
 	var mainBody = document.getElementById('mainBody');
 	var legend = document.getElementById('leg');
