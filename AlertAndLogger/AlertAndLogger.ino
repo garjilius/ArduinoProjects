@@ -139,7 +139,7 @@ void loop() {
           client.println(F("<BODY>"));
           client.println(F("<div id='mainBody'></div>"));
           client.println(F("<fieldset><legend><i class=\"far fa-clock\"></i> SET TIME <i class=\"far fa-clock\"></i></legend><form action="">"));
-          client.println(F("<i class=\"fas fa-tachometer-alt\"></i> Frequenza Logging (minuti)"));
+          client.println(F("<i class=\"fas fa-tachometer-alt\"></i> Logging Frequence (min)"));
           int minInterval = logInterval / 60;
           minInterval = minInterval / 1000;
           String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
