@@ -1,8 +1,8 @@
 /*****************************************************************************************
      Lab of IoT - AA 2019/2020 - Emanuele Gargiulo
      Arduino Alert & Logger:
-     https://drive.google.com/open?id=1mT9lr5-akYNQww7m9ZU5IvrvnQj9yaphkOifaIx3o74
-     https://github.com/garjilius/ArduinoProjects/tree/master/AlertAndLogger
+    DOCUMENTATION: https://drive.google.com/open?id=1mT9lr5-akYNQww7m9ZU5IvrvnQj9yaphkOifaIx3o74
+    https://github.com/garjilius/ArduinoProjects/tree/master/AlertAndLogger
  *****************************************************************************************/
 #include <DHT.h>
 #include <BlynkSimpleWiFiNINA.h>
@@ -44,8 +44,8 @@ hd44780_I2Cexp lcd;
 //30000 byte = about 1000 lines. This define the max size of log files
 #define MAXLOGSIZE 30000
 
-#define DHTTYPE DHT11     // DHT 11
-//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
+//#define DHTTYPE DHT11     // DHT 11
+#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
 WiFiSSLClient client;
 WiFiServer server(80);
@@ -130,9 +130,9 @@ void loop() {
           //client.println(F("<!DOCTYPE HTML>"));
           client.println(F("<HTML>"));
           client.println(F("<HEAD>"));
-          client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>"));
+          client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>")); //ATTACHED IN PROJECT FOLDER (STYLES.CSS)
           //Most of the page gets added via remote javascript to save space on arduino and speed things up
-          client.println(F("<script src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jsextra.js?dl=0\"></script>"));
+          client.println(F("<script src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jsextra.js?dl=0\"></script>")); //ATTACHED IN PROJECT FOLDER (JSEXTRA.JS)
           client.println(F("<script src=\"https://kit.fontawesome.com/a076d05399.js\"></script>"));
           client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
           client.println(F("</HEAD>"));
