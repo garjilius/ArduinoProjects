@@ -44,8 +44,8 @@ hd44780_I2Cexp lcd;
 //30000 byte = about 1000 lines. This define the max size of log files
 #define MAXLOGSIZE 30000
 
-//#define DHTTYPE DHT11     // DHT 11
-#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
+#define DHTTYPE DHT11     // DHT 11
+//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
 
 WiFiSSLClient client;
 WiFiServer server(80);
