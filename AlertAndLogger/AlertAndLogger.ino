@@ -475,7 +475,7 @@ void deleteSDLog() {
     DEBUG_PRINT(entry.name());
     if (SD.remove(entry.name())) {
       DEBUG_PRINTLN(": removed");
-      needRecovery--;
+        needRecovery--;
     }
     else {
       DEBUG_PRINTLN(": not removed");
