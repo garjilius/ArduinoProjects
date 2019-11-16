@@ -60,7 +60,7 @@ float temp;
 int humLimit = 75; //Preset treshold for humidity and temperature. Can override via blynk app
 int tempLimit = 25;
 int timerGoogle;
-int recoveredLines = 0;
+int recoveredLines = 0; //Number of lines recovered while in recovery process (shown on LCD). 0 at all other times. 
 bool sdOK = false;
 long int logInterval = 900000L; //Preset log interval. Can override via arduino web server
 int needRecovery = 0; //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
@@ -93,7 +93,7 @@ BLYNK_CONNECTED() {
 
 void loop() {
   Blynk.run();
-  timer.run();
+  timer.run(); //Blynk's "version" of SimpleTimer.h
   myRTC.updateTime();
 
   //Retries to initialize SD if failed.
@@ -127,7 +127,6 @@ void loop() {
           client.println(F("Content-Type: text/html"));
           client.println(F("Connection: close"));  // the connection will be closed after completion of the response
           client.println();
-          //client.println(F("<!DOCTYPE HTML>"));
           client.println(F("<HTML>"));
           client.println(F("<HEAD>"));
           client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>")); //ATTACHED IN PROJECT FOLDER (STYLES.CSS)
@@ -161,12 +160,12 @@ void loop() {
             //giorno-mese-anno-ora-minuto-secondo
             int date[7];
             date[6] = readString.substring(11, 13).toInt(); //dayofweek
-            date[0] = readString.substring(14, 16).toInt(); //giorno
-            date[1] = readString.substring(17, 19).toInt(); //mese
-            date[2] = readString.substring(20, 24).toInt(); //anno
-            date[3] = readString.substring(25, 27).toInt(); //ora
-            date[4] = readString.substring(28, 30).toInt(); //minuto
-            date[5] = readString.substring(31, 33).toInt(); //secondo
+            date[0] = readString.substring(14, 16).toInt(); //day
+            date[1] = readString.substring(17, 19).toInt(); //month
+            date[2] = readString.substring(20, 24).toInt(); //year
+            date[3] = readString.substring(25, 27).toInt(); //hour
+            date[4] = readString.substring(28, 30).toInt(); //min
+            date[5] = readString.substring(31, 33).toInt(); //sec
             // seconds, minutes, hours, day of the week, day of the month, month, year
             myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
             myRTC.updateTime(); //Need to update the RTC module before setting currentDay to its 'Day'
@@ -252,7 +251,6 @@ void sendSensor() {
       notifica += hum;
       notifica += "% - ";
       notifica += printTime();
-      //Blynk.email("Umidità", notifica); //Mail example
       Blynk.notify(notifica);
     }
   }
@@ -300,8 +298,6 @@ void setup() {
   //SD Initialization
   sdOK = SD.begin(chipSelect);
   if (!sdOK) {
-    //Commented out as it will be printed in the loop function
-    //DEBUG_PRINTLN(F("SD Card failed"));
     lcd.print(F(" - SD Err"));
   } else {
     DEBUG_PRINTLN(F("SD Card initialized."));
@@ -318,8 +314,8 @@ void setup() {
 
   /*Reads from eeprom if there's need for recovery or not.
     255 is EEPROM's default value.
-    I check if there's a file named 255.txt, given that recovery files get incremental names.
-    If such file doesn't exist, i have confirmation that 255 is just the default value and take it back to 0.
+    Checks if there's a file named 255.txt, given that recovery files get incremental names.
+    If such file doesn't exist, we have confirmation that 255 is just the default value and set it back to 0.
     If the retrieved value is less than 0, it also means there's been a reading problem and the value is set to 0
   */
   EEPROM.get(0, needRecovery);
@@ -345,7 +341,7 @@ void setup() {
     }
   */
 
-  //First logging happens 30s after boot, regardless of logging interval settings. Display initialized after 4s
+  //First logging happens 30s after boot, regardless of logging interval settings. Display initialized after 2s
   timer.setTimeout(30000, sendData);
   timer.setTimeout(2000, handleDisplay);
   timer.setTimeout(2100, checkWifi);
@@ -369,11 +365,11 @@ void enableMovementNotification() {
 void readData() {
   hum = dht.readHumidity();
   temp = dht.readTemperature();
-  if (isnan(hum) || isnan(temp)) {
+  if (isnan(hum) || isnan(temp)) { //Reading error from DHT Sensor
     DEBUG_PRINTLN(F("DHT Read Fail"));
     return;
   }
-  manageStats(temp, hum);
+  manageStats(temp, hum); //Keep memory of highest/Lowest temp/hum
 }
 
 //Logs data do Google Sheets
@@ -382,7 +378,7 @@ void sendData() {
   if ((WiFi.status() != WL_CONNECTED) || (!client.connect(host, httpsPort))) {
     DEBUG_PRINTLN(F("Connection failed"));
     lcd.print(F("CLOUD LOG ERR"));
-    //Log data su SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
+    //Log data to SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
     logData();
     return;
   }
@@ -531,7 +527,7 @@ void recovery() {
     needRecovery--;
     if (needRecovery > 0) {
       recovery();
-    } else { //Ho finito il recovery di tutti i file
+    } else { //Recovery Done
       DEBUG_PRINTLN(F("Successful Recovery"));
       lcdClearLine(3);
       recoveredLines = 0;
@@ -539,12 +535,11 @@ void recovery() {
     }
 
   } else {
-    // if the file didn't open
-    //If the SD is working but the file didn't open, it means there's no more files to recover: SUCCESS
+    //if the SD is working but the file didn't open, it means there's no more files to recover: SUCCESS
     if (SD.exists( "/" )) {
       lcdClearLine(3);
       lcd.print(F(String(needRecovery) += ": Recovery SUCCESS"));
-    } else {
+    } else { //If file didn't open because SD is not working: FAIL
       DEBUG_PRINTLN(F("error opening log file"));
       lcd.print(F("Recovery FAILED"));
       sdOK = false;
@@ -589,7 +584,7 @@ String printTime() {
 }
 
 //Returns date string in DD/MM/YYYY-HH.MM.SS format.
-//ANY change to the format will require handling the new format in Google App Script when logging to Google Sheets
+//ANY change will require handling the new format in Google App Script when logging to Google Sheets
 String printDate() {
   String orario = "";
   orario += twoDigits(myRTC.dayofmonth);
@@ -649,7 +644,7 @@ void checkWifi() {
   }
   //If WIFI is connected but blynk isn't, I can try to reconnect to blynk servers
   if ((WiFi.status() == WL_CONNECTED) && (!Blynk.connected())) {
-    Blynk.connect(10000);
+    Blynk.connect(10000); //10K = Connection Timeout
   }
 }
 
