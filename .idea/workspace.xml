@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="7fc40ca1-4815-4eae-9771-36dd811d7d47" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/ProjUnoWifi/ProjUnoWifi.ino" beforeDir="false" afterPath="$PROJECT_DIR$/ProjUnoWifi/ProjUnoWifi.ino" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ResetRecovery/ResetRecovery.ino" beforeDir="false" afterPath="$PROJECT_DIR$/ResetRecovery/ResetRecovery.ino" afterDir="false" />
-    </list>
+    <list default="true" id="7fc40ca1-4815-4eae-9771-36dd811d7d47" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,6 +46,7 @@
       <workItem from="1571873000906" duration="303000" />
       <workItem from="1571929442236" duration="12000" />
       <workItem from="1572083836384" duration="2000" />
+      <workItem from="1573411608494" duration="9000" />
     </task>
     <servers />
   </component>

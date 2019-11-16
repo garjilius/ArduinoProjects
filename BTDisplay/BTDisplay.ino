@@ -20,7 +20,7 @@ void loop() {
     lcd.clear();
     String s = Serial.readString();
     lcdPrint(s);
-    //Serial.println(s);
+    Serial.print(s);
     //delay(5000);
     //printStringChar(s);
   }
