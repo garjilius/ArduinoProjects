@@ -45,14 +45,14 @@ hd44780_I2Cexp lcd;
 #define MAXLOGSIZE 30000
 
 #define DHTTYPE DHT11     // DHT 11
-//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Tipo del lab
+//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Lab's Sensor
 
 WiFiSSLClient client;
-WiFiServer server(80);
+WiFiServer server(80); //Used to Host the Control Panel
 
 DHT dht(DHTPIN, DHTTYPE);
 //User to setup repeated actions
-BlynkTimer timer;
+BlynkTimer timer; //Blynk's version of SimpleTimer
 
 String readString; //This strings will contain characters read from Clients that connect to Arduino's WebServer or from Google on upload to spreadsheet
 byte hum;
@@ -234,7 +234,7 @@ void sendSensor() {
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
 
-  //Even if system is disabled, it stills sends sensor value to the app to update gauges
+  //If system is disabled, return after updating hum and temp gauges
   if (systemDisabled == 1) {
     return;
   }
@@ -305,11 +305,11 @@ void setup() {
   }
 
   WiFi.begin(ssid, pass);
-  Blynk.config(auth);
+  Blynk.config(auth); //Pair Blynk to the app
 
   // Set the current date, and time in the following format:
   // seconds, minutes, hours, day of the week, day of the month, month, year
-  myRTC.setDS1302Time(00, 00, 14, 5, 7, 11, 2019);
+  myRTC.setDS1302Time(00, 00, 17, 1, 18, 11, 2019);
   currentDay = myRTC.dayofmonth;
 
   /*Reads from eeprom if there's need for recovery or not.
