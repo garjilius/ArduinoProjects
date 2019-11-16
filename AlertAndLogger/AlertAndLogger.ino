@@ -441,7 +441,6 @@ String getLogFile(bool write) {
       needRecovery++;
       EEPROM.write(0, needRecovery);
     }
-    String file = String(needRecovery) += ".txt";
     File checkFile = SD.open(String(needRecovery) += ".txt");
     if (checkFile.size() > MAXLOGSIZE) {
       needRecovery++;
