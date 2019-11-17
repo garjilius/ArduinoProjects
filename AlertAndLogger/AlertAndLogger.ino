@@ -243,7 +243,7 @@ void sendSensor() {
     return;
   }
 
-  /* Handle sensors' notifications.
+  /*  Handle sensors' notifications.
       After Sending a notification for humidity or temperature,
       further notifications won't be sent if the temp/hum value hasn't gone at least once below the set treshold.
       For movement, an interval between two notification has been set to 1 minute.
@@ -264,7 +264,7 @@ void sendSensor() {
 
   if (temp > tempLimit) {
     if (notificationAllowed[EVTEMP] == true) {
-      notificationAllowed[EVTEMP] = false; //
+      notificationAllowed[EVTEMP] = false; //Disable notifications...
       String notifica = "Temperature is too high: ";
       notifica += temp;
       notifica += " C - ";
@@ -273,7 +273,7 @@ void sendSensor() {
     }
   }
   else {
-    notificationAllowed[EVTEMP] = true;
+    notificationAllowed[EVTEMP] = true; //Re-enable notifications if temperature went below threshold
   }
 
   if (digitalRead(IRPIN) == HIGH && notificationAllowed[EVMOV] == true) {
@@ -293,8 +293,8 @@ void setup() {
   pinMode(WIFILED, OUTPUT);
   pinMode(DHTPIN, INPUT);
   pinMode(IRPIN, INPUT);
-  WiFi.setTimeout(5000);
-  dht.begin();
+  WiFi.setTimeout(5000); //Wifi connection timeout, avoids wifi being blocking
+  dht.begin(); //DHT Initialization...
   server.begin();   // start the web server on port 80
   //Display Initialization
   lcd.begin(20, 4);
@@ -308,7 +308,7 @@ void setup() {
     lcd.print(F(" - SD OK"));
   }
 
-  WiFi.begin(ssid, pass);
+  WiFi.begin(ssid, pass); 
   Blynk.config(auth); //Pair Blynk to the app
 
   // Set the current date, and time in the following format:
@@ -369,11 +369,11 @@ void enableMovementNotification() {
 void readData() {
   hum = dht.readHumidity();
   temp = dht.readTemperature();
-  if (isnan(hum) || isnan(temp)) { //Reading error from DHT Sensor
+  if (isnan(hum) || isnan(temp)) { //Error reading from DHT Sensor
     DEBUG_PRINTLN(F("DHT Read Fail"));
     return;
   }
-  manageStats(temp, hum); //Keep memory of highest/Lowest temp/hum
+  manageStats(temp, hum); //Keep memory of highest/lowest temp/hum
 }
 
 //Logs data do Google Sheets
@@ -407,6 +407,7 @@ void sendData() {
 //::::::::::::::::::::::::FOLLOWING FUNCTIONS HANDLE SD:::::::::::::::::::::::::::::::
 //Logs data to SD
 void logData() {
+  //This string will contain all logging data for current sensors reading: Date/Time, Temp, Hum
   String dataString;
   dataString += printDate();
   dataString += " ";
@@ -568,7 +569,7 @@ BLYNK_WRITE(V2)  {
 }
 
 //:::::::::::::::FOLLOWING FUNCTIONS HANDLE TIME&DATE STRINGS:::::::::::::
-//Turns a single digit number in a two digits string, or number in string if >=2 digits
+//Turns a single digit number in a two characters string, or number in string if >=2 digits
 String twoDigits(uint8_t input) {
   if (input < 10) {
     String inputString = String(input);
@@ -641,7 +642,6 @@ void checkWifi() {
     lcdClearLine(1);
     WiFi.begin(ssid, pass);
     printWifiData();
-    //server.begin();
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK "));
@@ -698,6 +698,7 @@ void lcdClearLine(int i) {
 //Check if log lines need to be synced from the SD card to google sheets
 void recoveryManager() {
   if (needRecovery >= 1) {
+    //Start recovery process if files need it
     recovery();
   }
   else {
