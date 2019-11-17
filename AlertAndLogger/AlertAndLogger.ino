@@ -55,20 +55,20 @@ DHT dht(DHTPIN, DHTTYPE);
 BlynkTimer timer; //Blynk's version of SimpleTimer
 
 String readString; //This strings will contain characters read from Clients that connect to Arduino's WebServer or from Google on upload to spreadsheet
-byte hum;
-float temp;
-int humLimit = 75; //Preset treshold for humidity and temperature. Can override via blynk app
-int tempLimit = 25;
-int timerGoogle;
+byte hum; //Last humidity value from DHT
+float temp; //Last temperature value from DHT
+int humLimit = 75; //Preset treshold for humidity. Can override via blynk app
+int tempLimit = 25; //Preset treshold for temperature. Can override via blynk app
+int timerGoogle; //a timer will be associated to this variable
 int recoveredLines = 0; //Number of lines recovered while in recovery process (shown on LCD). 0 at all other times. 
-bool sdOK = false;
+bool sdOK = false; //Will be set to true if SD is working. 
 long int logInterval = 900000L; //Preset log interval. Can override via arduino web server
 int needRecovery = 0; //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
 bool notificationAllowed[3] = {true, true, true}; //Allows/Denies notifications for humidity, temperature and movement
 bool systemDisabled = false; //Disables notifications for the whole system (via blynk app)
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
-//Saving info used for recap email
+//Saving info used for recap email: Max&Min temp/hum + number of movements detected
 //Position 0: Min - position 1: Max
 byte humStat[2] = {100, 0};
 float tempStat[2] = {100, -100};
@@ -92,7 +92,7 @@ BLYNK_CONNECTED() {
 }
 
 void loop() {
-  Blynk.run();
+  Blynk.run();  //Keeps blynk running
   timer.run(); //Blynk's "version" of SimpleTimer.h
   myRTC.updateTime();
 
@@ -139,11 +139,13 @@ void loop() {
           client.println(F("<div id='mainBody'></div>"));
           client.println(F("<fieldset><legend><i class=\"far fa-clock\"></i> SET TIME <i class=\"far fa-clock\"></i></legend><form action="">"));
           client.println(F("<i class=\"fas fa-tachometer-alt\"></i> Logging Frequency (min)"));
-          int minInterval = logInterval / 60;
-          minInterval = minInterval / 1000;
+          //:::::::::::Sets Text Area to LogInterval (in minutes):::::::::::::::
+          int minInterval = logInterval / 60; 
+          minInterval = minInterval / 1000; 
           String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
           interval += minInterval;
           interval += ">";
+          //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           client.println(interval);
           client.println(F("<input type=\"submit\" value=\"Set Log Interval\" class=\"button button1\"></form>"));
           client.println(F("<div id='time'></div></fieldset>"));
@@ -157,8 +159,9 @@ void loop() {
           //DEBUG_PRINTLN("client disconnected");
           //Gets date from Client via Javascript (view JS source code) and sets RTC to it
           if (readString.indexOf("?date") > 0) {
-            //giorno-mese-anno-ora-minuto-secondo
+            //day-month-year-hour-min-sec
             int date[7];
+            //Splits the string at fixed places to get day, month etc
             date[6] = readString.substring(11, 13).toInt(); //dayofweek
             date[0] = readString.substring(14, 16).toInt(); //day
             date[1] = readString.substring(17, 19).toInt(); //month
@@ -166,7 +169,7 @@ void loop() {
             date[3] = readString.substring(25, 27).toInt(); //hour
             date[4] = readString.substring(28, 30).toInt(); //min
             date[5] = readString.substring(31, 33).toInt(); //sec
-            // seconds, minutes, hours, day of the week, day of the month, month, year
+            //Sets RTC: seconds, minutes, hours, day of the week, day of the month, month, year
             myRTC.setDS1302Time(date[5], date[4], date[3], date[6], date[0], date[1], date[2]);
             myRTC.updateTime(); //Need to update the RTC module before setting currentDay to its 'Day'
             currentDay = myRTC.dayofmonth;
@@ -174,6 +177,7 @@ void loop() {
             lcdClearLine(3);
             lcd.print(F("Time Set"));
           }
+          //Each string in the URL will be used to start a different function
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
           }
