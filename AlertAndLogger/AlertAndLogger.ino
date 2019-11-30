@@ -26,7 +26,7 @@
 //Disabling Debug saves about 2-3% of memory on Arduino
 #ifdef DEBUG
 #define DEBUG_PRINT(x)     Serial.print(x)
-#define DEBUG_PRINTDEC(x)  Serial.print(x, DEC)
+#define DEBUG_PRINTDEC(x)  Serial.print(x, DEC) //Print numbers to an arbitrary number of decimal places
 #define DEBUG_PRINTLN(x)   Serial.println(x)
 #else
 #define DEBUG_PRINT(x)
@@ -275,8 +275,8 @@ void sendSensor() {
   else {
     notificationAllowed[EVTEMP] = true; //Re-enable notifications if temperature went below threshold
   }
-
-  if (digitalRead(IRPIN) == HIGH && notificationAllowed[EVMOV] == true) {
+ 
+  if (digitalRead(IRPIN) == HIGH && notificationAllowed[EVMOV] == true) { //A movement was detected and notifications are allowed...
     notificationAllowed[EVMOV] = false;
     timer.setTimeout(60000L, enableMovementNotification); //Re-Enables movement notification after one minute
     numMov++;
