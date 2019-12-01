@@ -60,8 +60,8 @@ float temp; //Last temperature value from DHT
 int humLimit = 75; //Preset treshold for humidity. Can override via blynk app
 int tempLimit = 25; //Preset treshold for temperature. Can override via blynk app
 int timerGoogle; //a timer will be associated to this variable
-int recoveredLines = 0; //Number of lines recovered while in recovery process (shown on LCD). 0 at all other times. 
-bool sdOK = false; //Will be set to true if SD is working. 
+int recoveredLines = 0; //Number of lines recovered while in recovery process (shown on LCD). 0 at all other times.
+bool sdOK = false; //Will be set to true if SD is working.
 long int logInterval = 900000L; //Preset log interval. Can override via arduino web server
 int needRecovery = 0; //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
 bool notificationAllowed[3] = {true, true, true}; //Allows/Denies notifications for humidity, temperature and movement
@@ -140,8 +140,8 @@ void loop() {
           client.println(F("<fieldset><legend><i class=\"far fa-clock\"></i> SET TIME <i class=\"far fa-clock\"></i></legend><form action="">"));
           client.println(F("<i class=\"fas fa-tachometer-alt\"></i> Logging Frequency (min)"));
           //:::::::::::Sets Text Area to LogInterval (in minutes):::::::::::::::
-          int minInterval = logInterval / 60; 
-          minInterval = minInterval / 1000; 
+          int minInterval = logInterval / 60;
+          minInterval = minInterval / 1000;
           String interval = "<input type=\"number\" name=\"logInterval\" min=\"1\" max=\"1440\" value=";
           interval += minInterval;
           interval += ">";
@@ -185,6 +185,7 @@ void loop() {
             sendData();
           }
           if (readString.indexOf("?reset") > 0) {
+            Blynk.email(F("Sheet Reset"), "Sheet Reset by Arduino");
             resetSheets();
           }
           if (readString.indexOf("?deleteSD") > 0) {
@@ -275,7 +276,7 @@ void sendSensor() {
   else {
     notificationAllowed[EVTEMP] = true; //Re-enable notifications if temperature went below threshold
   }
- 
+
   if (digitalRead(IRPIN) == HIGH && notificationAllowed[EVMOV] == true) { //A movement was detected and notifications are allowed...
     notificationAllowed[EVMOV] = false;
     timer.setTimeout(60000L, enableMovementNotification); //Re-Enables movement notification after one minute
@@ -475,7 +476,7 @@ void deleteSDLog() {
     DEBUG_PRINT(entry.name());
     if (SD.remove(entry.name())) {
       DEBUG_PRINTLN(": removed");
-        needRecovery--;
+      needRecovery--;
     }
     else {
       DEBUG_PRINTLN(": not removed");
