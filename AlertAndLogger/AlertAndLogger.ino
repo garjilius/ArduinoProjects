@@ -47,7 +47,7 @@ hd44780_I2Cexp lcd;
 #define DHTTYPE DHT11     // DHT 11
 //#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Lab's Sensor
 
-WiFiSSLClient client;
+WiFiSSLClient client; //Used for communication with Google Sheets
 WiFiServer server(80); //Used to Host the Control Panel
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -308,7 +308,7 @@ void setup() {
     lcd.print(F(" - SD OK"));
   }
 
-  WiFi.begin(ssid, pass); 
+  WiFi.begin(ssid, pass); //Connects to WiFi
   Blynk.config(auth); //Pair Blynk to the app
 
   // Set the current date, and time in the following format:
@@ -353,9 +353,9 @@ void setup() {
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
-  timer.setInterval(10000, handleDisplay);
-  timer.setInterval(60000, checkWifi);
-  timer.setInterval(1800000L, handleReports);
+  timer.setInterval(10000, handleDisplay); //Display updated every 10 seconds
+  timer.setInterval(60000, checkWifi); //WiFi status is checked every minute
+  timer.setInterval(1800000L, handleReports); //Need to send a report is checked every half an hour
 }
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -365,7 +365,7 @@ void enableMovementNotification() {
   notificationAllowed[EVMOV] = true;
 }
 
-//Reads data from DHT sensor & Calls function to keep stats update
+//Reads data from DHT sensor & Calls function to keep stats updated
 void readData() {
   hum = dht.readHumidity();
   temp = dht.readTemperature();
@@ -437,7 +437,7 @@ void logData() {
   If the file is just needed for reading, it returns the current file name
 */
 String getLogFile(bool write) {
-  if (write) {
+  if (write) { //if recovery file is needed in write mode, I might also need to increment needRecovery / create a new file, if no file existed or if current log file exceeds maximum size
     if (needRecovery == 0) {
       needRecovery++;
       EEPROM.write(0, needRecovery);
@@ -676,7 +676,7 @@ void resetSheets() {
   }
 }
 
-// print your board's IP address:
+// print board's IP address:
 void printWifiData() {
   DEBUG_PRINTLN(WiFi.localIP());
 }
@@ -687,13 +687,6 @@ void lcdClearLine(int i) {
   lcd.print("                    "); //20 Whitespaces to clean the whole line on a 20x4 display
   lcd.setCursor(0, i);
 }
-
-/*
-   Functions to manage stats and send reports have been split into separate functions to allow more flexibility:
-   For example, you can send a mail recap if the date has changed (= on a new day), but you can also send a recap
-   explicitly requesting it via control panel and so on
-*/
-
 
 //Check if log lines need to be synced from the SD card to google sheets
 void recoveryManager() {
@@ -706,6 +699,12 @@ void recoveryManager() {
     lcd.print("Rec. Not Needed");
   }
 }
+
+/*
+   Functions to manage stats and send reports have been split into separate functions to allow more flexibility:
+   For example, you can send a mail recap if the date has changed (= on a new day), but you can also send a recap
+   explicitly requesting it via control panel and so on
+*/
 
 //Keeps min and max temperature updated
 void manageStats(float temp, int hum) {
