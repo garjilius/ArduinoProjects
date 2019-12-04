@@ -288,14 +288,8 @@ void setup() {
   //Display Initialization
   lcd.begin(20, 4);
   lcd.setCursor(8, 2);
-  //SD Initialization
-  sdOK = SD.begin(chipSelect);
-  if (!sdOK) {
-    lcd.print(F(" - SD Err"));
-  } else {
-    DEBUG_PRINTLN(F("SD Card initialized."));
-    lcd.print(F(" - SD OK"));
-  }
+  //SD Initialization and handle sd status messages on display/serial
+  checkSD();
 
   WiFi.begin(ssid, pass); //Connects to WiFi
   Blynk.config(auth); //Pair Blynk to the app
@@ -324,16 +318,6 @@ void setup() {
   DEBUG_PRINT(F("Need recovery: "));
   DEBUG_PRINTLN(needRecovery);
 
-  printWifiData();
-
-  /*
-    String fv = WiFi.firmwareVersion();
-    if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-    DEBUG_PRINT(F("Please upgrade the firmware. Installed: "));
-    DEBUG_PRINTLN(fv);
-    }
-  */
-
   //First logging happens 30s after boot, regardless of logging interval settings. Display initialized after 2s
   timer.setTimeout(30000, sendData);
   timer.setTimeout(2000, handleDisplay);
@@ -345,7 +329,7 @@ void setup() {
   timer.setInterval(10000, handleDisplay); //Display updated every 10 seconds
   timer.setInterval(30000, checkWifi); //WiFi status is checked every 30a
   timer.setInterval(1800000L, handleReports); //Need to send a report is checked every half an hour
-  timer.setInterval(60000, checkSD); //Checks if SD is working every minute
+  timer.setInterval(5000, checkSD); //Checks if SD is working every minute
 
 }
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -401,17 +385,16 @@ void sendData() {
 //Retries to initialize SD if failed.
 //If SD is not working, sd led comes up, then it is turned off again if SD starts working
 void checkSD() {
-  sdOK = SD.exists("/"));
+  lcd.setCursor(8, 2);
+  sdOK = SD.begin(chipSelect);
   if (!sdOK)  {
-    DEBUG_PRINTLN(F("SD NOT WORKING!"));
     lcd.print(F(" - SD Err"));
     digitalWrite(SDLED, HIGH);  // indicate via LED
-    SD.begin(chipSelect) //retries initialization
-    lcd.setCursor(8, 2);
+    sdOK = SD.begin(chipSelect); //retries initialization
   }
   else {
     digitalWrite(SDLED, LOW);  // indicate via LED
-    lcd.print(F(" - SD OK"));
+    lcd.print(F(" - SD OK "));
   }
 }
 
@@ -431,8 +414,7 @@ void logData() {
     dataFile.println(dataString);
     dataFile.close();
     // print to the Serial port too:
-    DEBUG_PRINT(F("LoggedToSD: "));
-    DEBUG_PRINTLN(dataString);
+    DEBUG_PRINT(F("LoggedToSD"));
   }
   // if the file isn't open, pop up an error:
   else {
@@ -550,15 +532,7 @@ void recovery() {
     }
 
   } else {
-    //if the SD is working but the file didn't open, it means there's no more files to recover: SUCCESS
-    if (SD.exists( "/" )) {
-      lcdClearLine(3);
-      lcd.print(F(String(needRecovery) += ": Recovery SUCCESS"));
-    } else { //If file didn't open because SD is not working: FAIL
-      DEBUG_PRINTLN(F("error opening log file"));
       lcd.print(F("Recovery FAILED"));
-      sdOK = false;
-    }
   }
   //Saving the updated number of files that need recovery to EEPROM
   EEPROM.write(0, needRecovery);
@@ -630,12 +604,6 @@ void handleDisplay() {
   lcd.setCursor(0, 1);
   lcd.print(F("IP: "));
   lcd.print(WiFi.localIP());
-  lcd.setCursor(8, 2);
-  if (!sdOK) {
-    lcd.print(F(" - SD Err"));
-  } else {
-    lcd.print(F(" - SD OK "));
-  }
   lcd.setCursor(17, 3);
   lcd.print(F("("));
   lcd.print(needRecovery); //Number of files that need recovery
@@ -648,10 +616,8 @@ void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
     lcd.print(F("WiFi ERR"));
-    //DEBUG_PRINTLN("WiFi Down");
     lcdClearLine(1);
     WiFi.begin(ssid, pass);
-    printWifiData();
   } else {
     digitalWrite(WIFILED, HIGH);
     lcd.print(F("WiFi OK "));
@@ -679,17 +645,13 @@ void resetSheets() {
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
-      DEBUG_PRINTLN(F("Google Sheets Reset: SUCCESS"));
+      DEBUG_PRINTLN(F("Sheets Reset: SUCCESS"));
       lcd.print(F("CLOUD RESET OK"));
       break;
     }
   }
 }
 
-// print board's IP address:
-void printWifiData() {
-  DEBUG_PRINTLN(WiFi.localIP());
-}
 
 //Clears line 'i' and moves the cursor back to the start of that line
 void lcdClearLine(int i) {
