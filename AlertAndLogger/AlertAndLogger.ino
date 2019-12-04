@@ -21,7 +21,7 @@
 #define WIFILED 3
 #define SDLED 4
 
-#define DEBUG
+//#define DEBUG
 //Allows to toggle SERIAL PRINT on or off simply defining (or not defining) Debug (^ above).
 //Disabling Debug saves about 2-3% of memory on Arduino
 #ifdef DEBUG
@@ -313,15 +313,14 @@ void setup() {
     }
   }
 
-
   //Print number of files that need recovery
   DEBUG_PRINT(F("Need recovery: "));
   DEBUG_PRINTLN(needRecovery);
 
   //First logging happens 30s after boot, regardless of logging interval settings. Display initialized after 2s
   timer.setTimeout(30000, sendData);
-  timer.setTimeout(2000, handleDisplay);
-  timer.setTimeout(2100, checkWifi);
+  handleDisplay();
+  checkWifi();
 
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
