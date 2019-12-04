@@ -21,7 +21,7 @@
 #define WIFILED 3
 #define SDLED 4
 
-//#define DEBUG
+#define DEBUG
 //Allows to toggle SERIAL PRINT on or off simply defining (or not defining) Debug (^ above).
 //Disabling Debug saves about 2-3% of memory on Arduino
 #ifdef DEBUG
@@ -327,10 +327,9 @@ void setup() {
   timer.setInterval(3000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
   timer.setInterval(10000, handleDisplay); //Display updated every 10 seconds
-  timer.setInterval(30000, checkWifi); //WiFi status is checked every 30a
+  timer.setInterval(60000, checkWifi); //WiFi status is checked every 30s
   timer.setInterval(1800000L, handleReports); //Need to send a report is checked every half an hour
-  timer.setInterval(5000, checkSD); //Checks if SD is working every minute
-
+  timer.setInterval(30000, checkSD); //Checks if SD is working every minute
 }
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -532,7 +531,7 @@ void recovery() {
     }
 
   } else {
-      lcd.print(F("Recovery FAILED"));
+    lcd.print(F("Recovery FAILED"));
   }
   //Saving the updated number of files that need recovery to EEPROM
   EEPROM.write(0, needRecovery);
@@ -601,9 +600,17 @@ void handleDisplay() {
   lcd.print("% T:");
   lcd.print(temp);
   lcd.print("C");
-  lcd.setCursor(0, 1);
-  lcd.print(F("IP: "));
-  lcd.print(WiFi.localIP());
+  if (WiFi.status() == WL_CONNECTED) {
+    lcd.setCursor(0, 1);
+    lcd.print(F("IP: "));
+    lcd.print(WiFi.localIP());
+    lcd.setCursor(0, 2);
+    lcd.print(F("WiFi OK "));
+  } else {
+    lcd.setCursor(0, 2);
+    lcd.print(F("WiFi ERR"));
+    lcdClearLine(1);
+  }
   lcd.setCursor(17, 3);
   lcd.print(F("("));
   lcd.print(needRecovery); //Number of files that need recovery
@@ -612,15 +619,11 @@ void handleDisplay() {
 
 //If WIFI is not working, we attempt to reconnect to wifi and to blynk servers
 void checkWifi() {
-  lcd.setCursor(0, 2);
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
-    lcd.print(F("WiFi ERR"));
-    lcdClearLine(1);
     WiFi.begin(ssid, pass);
   } else {
     digitalWrite(WIFILED, HIGH);
-    lcd.print(F("WiFi OK "));
   }
   //If WIFI is connected but blynk isn't, I can try to reconnect to blynk servers
   if ((WiFi.status() == WL_CONNECTED) && (!Blynk.connected())) {
