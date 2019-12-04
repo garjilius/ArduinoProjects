@@ -398,7 +398,7 @@ void checkSD() {
 
 //Logs data to SD
 void logData() {
-    if(!sdOK) {
+  if (!sdOK) {
     return; //If SD is not working, no point in trying to log to SD
   }
   //This string will contain all logging data for current sensors reading: Date/Time, Temp, Hum
@@ -438,8 +438,9 @@ String getLogFile(bool write) {
     if (checkFile.size() > MAXLOGSIZE) {
       needRecovery++;
       EEPROM.write(0, needRecovery);
-      checkFile.close();
     }
+    checkFile.close();
+
   }
   DEBUG_PRINTLN(String(needRecovery) += ".txt");
   return String(needRecovery) += ".txt";
@@ -530,7 +531,6 @@ void recovery() {
       recoveredLines = 0;
       lcd.print(F("Recovery OK"));
     }
-
   } else {
     lcd.print(F("Recovery FAILED"));
   }
