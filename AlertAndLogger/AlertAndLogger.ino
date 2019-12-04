@@ -294,9 +294,6 @@ void setup() {
   WiFi.begin(ssid, pass); //Connects to WiFi
   Blynk.config(auth); //Pair Blynk to the app
 
-  // Set the current date, and time in the following format:
-  // seconds, minutes, hours, day of the week, day of the month, month, year
-  myRTC.setDS1302Time(00, 00, 17, 1, 18, 11, 2019);
   currentDay = myRTC.dayofmonth;
 
   /*Reads from eeprom if there's need for recovery or not.
