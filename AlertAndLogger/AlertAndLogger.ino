@@ -96,18 +96,6 @@ void loop() {
   timer.run(); //Blynk's "version" of SimpleTimer.h
   myRTC.updateTime();
 
-  //Retries to initialize SD if failed.
-  //If SD is not working, sd led comes up, then it is turned off again if SD starts working
-  if (!sdOK) {
-    DEBUG_PRINTLN(F("SD NOT WORKING!"));
-    digitalWrite(SDLED, HIGH);  // indicate via LED
-    if (sdOK = SD.begin(chipSelect)) {
-      DEBUG_PRINTLN(F("SD INITIALIZED"));
-      digitalWrite(SDLED, LOW);  // indicate via LED
-    }
-  }
-
-
   //:::::::::::::::::::::::::::::::::WEBSERVER:::::::::::::::::::::::::::::::
   WiFiClient client = server.available();   // listen for incoming clients
 
@@ -355,8 +343,10 @@ void setup() {
   timer.setInterval(3000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
   timer.setInterval(10000, handleDisplay); //Display updated every 10 seconds
-  timer.setInterval(60000, checkWifi); //WiFi status is checked every minute
+  timer.setInterval(30000, checkWifi); //WiFi status is checked every 30a
   timer.setInterval(1800000L, handleReports); //Need to send a report is checked every half an hour
+  timer.setInterval(60000, checkSD); //Checks if SD is working every minute
+
 }
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -406,6 +396,25 @@ void sendData() {
 }
 
 //::::::::::::::::::::::::FOLLOWING FUNCTIONS HANDLE SD:::::::::::::::::::::::::::::::
+
+//Checks if SD is working by trying to open its root directory
+//Retries to initialize SD if failed.
+//If SD is not working, sd led comes up, then it is turned off again if SD starts working
+void checkSD() {
+  sdOK = SD.exists("/"));
+  if (!sdOK)  {
+    DEBUG_PRINTLN(F("SD NOT WORKING!"));
+    lcd.print(F(" - SD Err"));
+    digitalWrite(SDLED, HIGH);  // indicate via LED
+    SD.begin(chipSelect) //retries initialization
+    lcd.setCursor(8, 2);
+  }
+  else {
+    digitalWrite(SDLED, LOW);  // indicate via LED
+    lcd.print(F(" - SD OK"));
+  }
+}
+
 //Logs data to SD
 void logData() {
   //This string will contain all logging data for current sensors reading: Date/Time, Temp, Hum
