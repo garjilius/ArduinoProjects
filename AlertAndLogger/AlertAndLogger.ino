@@ -440,7 +440,6 @@ String getLogFile(bool write) {
       EEPROM.write(0, needRecovery);
     }
     checkFile.close();
-
   }
   DEBUG_PRINTLN(String(needRecovery) += ".txt");
   return String(needRecovery) += ".txt";
@@ -449,11 +448,6 @@ String getLogFile(bool write) {
 //Delete all SD Log files
 void deleteSDLog() {
   lcdClearLine(3);
-  //If no files need to be recovered, return
-  if (needRecovery == 0) {
-    lcd.print("0 to delete");
-    return;
-  }
   File root = SD.open("/");
   //Delete every file. It obviously assumes all files on the SD card are recovery logs.
   //No check is made on files to save memory on arduino
