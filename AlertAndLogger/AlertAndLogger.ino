@@ -398,6 +398,9 @@ void checkSD() {
 
 //Logs data to SD
 void logData() {
+    if(!sdOK) {
+    return; //If SD is not working, no point in trying to log to SD
+  }
   //This string will contain all logging data for current sensors reading: Date/Time, Temp, Hum
   String dataString;
   dataString += printDate();
@@ -418,7 +421,6 @@ void logData() {
   else {
     DEBUG_PRINTLN(F("error opening log file"));
     sdOK = false;
-    needRecovery--;
   }
 }
 
@@ -664,13 +666,13 @@ void lcdClearLine(int i) {
 
 //Check if log lines need to be synced from the SD card to google sheets
 void recoveryManager() {
-  if (needRecovery >= 1) {
+  if (needRecovery >= 1 && sdOK) {
     //Start recovery process if files need it
     recovery();
   }
   else {
     lcdClearLine(3);
-    lcd.print("Rec. Not Needed");
+    lcd.print("No Recovery!");
   }
 }
 
