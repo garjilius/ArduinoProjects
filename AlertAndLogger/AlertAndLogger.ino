@@ -324,9 +324,9 @@ void setup() {
   timer.setInterval(3000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
   timer.setInterval(10000, handleDisplay); //Display updated every 10 seconds
-  timer.setInterval(60000, checkWifi); //WiFi status is checked every 30s
+  timer.setInterval(35000, checkWifi); //WiFi status is checked every 35s
   timer.setInterval(1800000L, handleReports); //Need to send a report is checked every half an hour
-  timer.setInterval(30000, checkSD); //Checks if SD is working every minute
+  timer.setInterval(30000, checkSD); //Checks if SD is working every 30s
 }
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
