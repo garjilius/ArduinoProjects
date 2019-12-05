@@ -294,7 +294,6 @@ void setup() {
   WiFi.begin(ssid, pass); //Connects to WiFi
   Blynk.config(auth); //Pair Blynk to the app
 
-  currentDay = myRTC.dayofmonth;
 
   /*Reads from eeprom if there's need for recovery or not.
     255 is EEPROM's default value.
@@ -316,8 +315,10 @@ void setup() {
 
   //First logging happens 30s after boot, regardless of logging interval settings. Display initialized after 2s
   timer.setTimeout(30000, sendData);
+  myRTC.updateTime();
   handleDisplay();
   checkWifi();
+  currentDay = myRTC.dayofmonth;
 
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
