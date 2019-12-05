@@ -317,7 +317,6 @@ void setup() {
   timer.setTimeout(30000, sendData);
   myRTC.updateTime();
   handleDisplay();
-  checkWifi();
   currentDay = myRTC.dayofmonth;
 
   //Sets run frequency for used functions
