@@ -383,7 +383,7 @@ void checkSD() {
   lcd.setCursor(8, 2);
   sdOK = SD.begin(chipSelect);
   if (!sdOK)  {
-    lcd.print(F(" - SD Err"));
+    lcd.print(F(" - SD ERR"));
     digitalWrite(SDLED, HIGH);  // indicate via LED
     sdOK = SD.begin(chipSelect); //retries initialization
   }
@@ -396,6 +396,8 @@ void checkSD() {
 //Logs data to SD
 void logData() {
   if (!sdOK) {
+    lcdClearLine(3);
+    lcd.print("SD BACKUP FAIL");
     return; //If SD is not working, no point in trying to log to SD
   }
   //This string will contain all logging data for current sensors reading: Date/Time, Temp, Hum
