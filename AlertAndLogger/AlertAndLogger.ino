@@ -85,12 +85,6 @@ String GAS_ID = GoogleAppScript_ID; //Identifies Google App Script
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
 
-//On connection to Blynk Server
-BLYNK_CONNECTED() {
-  // Request Blynk server to re-send latest values for all pins
-  Blynk.syncAll();
-}
-
 void loop() {
   Blynk.run();  //Keeps blynk running
   timer.run(); //Blynk's "version" of SimpleTimer.h
@@ -533,6 +527,13 @@ void recovery() {
 
 
 //:::::::::Following Functions read from Blynk's server values to be re-synced to arduino when rebooted::::::::::::
+//On connection to Blynk Server
+BLYNK_CONNECTED() {
+  // Request Blynk server to re-send latest values for all pins
+  Blynk.syncAll();
+}
+
+//Import variables from virtual pin status
 BLYNK_WRITE(V0)  {
   systemDisabled = param.asInt();
 }
