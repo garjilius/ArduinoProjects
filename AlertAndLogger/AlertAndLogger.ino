@@ -21,7 +21,7 @@
 #define WIFILED 3
 #define SDLED 4
 
-//#define DEBUG
+#define DEBUG
 //Allows to toggle SERIAL PRINT on or off simply defining (or not defining) Debug (^ above).
 //Disabling Debug saves about 2-3% of memory on Arduino
 #ifdef DEBUG
@@ -458,7 +458,7 @@ void deleteSDLog() {
     }
     entry.close();
     DEBUG_PRINT(entry.name());
-    if (SD.remove(entry.name())) {
+    if (SD.remove(entry.name()) && needRecovery > 0) {
       DEBUG_PRINTLN(": removed");
       needRecovery--;
     }
