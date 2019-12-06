@@ -389,7 +389,7 @@ void checkSD() {
 
 //Logs data to SD
 void logData() {
-  if (!sdOK) {
+  if (!SD.begin(chipSelect)) {
     lcdClearLine(3);
     lcd.print("SD BACKUP FAIL");
     return; //If SD is not working, no point in trying to log to SD
@@ -440,6 +440,9 @@ String getLogFile(bool write) {
 
 //Delete all SD Log files
 void deleteSDLog() {
+ if(!SD.begin(chipSelect)) {
+  return;
+ }
   lcdClearLine(3);
   File root = SD.open("/");
   //Delete every file. It obviously assumes all files on the SD card are recovery logs.
@@ -449,6 +452,8 @@ void deleteSDLog() {
     if (! entry) {
       // no more files, SD Empty
       lcd.print("All Files del.");
+      needRecovery = 0; //It should already be 0 as it is decreased with each file removed/recovered, but initializing ensures that if needRecovery had a wrong value, it will be back to 0 after deleteSDlog
+      EEPROM.write(0, needRecovery);
       break;
     }
     entry.close();
@@ -461,7 +466,6 @@ void deleteSDLog() {
       DEBUG_PRINTLN(": not removed");
     }
   }
-  EEPROM.write(0, needRecovery);
 }
 
 
@@ -519,6 +523,7 @@ void recovery() {
       lcd.print(F("Recovery OK"));
     }
   } else {
+    lcdClearLine(3);
     lcd.print(F("Recovery FAILED"));
   }
   //Saving the updated number of files that need recovery to EEPROM
