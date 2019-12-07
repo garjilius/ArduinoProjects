@@ -637,7 +637,7 @@ void resetSheets() {
     lcd.print(F("CLOUD RESET FAIL"));
     return;
   }
-  String url = "/macros/s/" + GAS_ID + "/exec?reset=1";
+  String url = "/macros/s/" + GAS_ID + "/exec?reset";
 
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
