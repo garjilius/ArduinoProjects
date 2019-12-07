@@ -22,7 +22,7 @@
 #define SDLED 4
 
 #define DEBUG
-//Allows to toggle SERIAL PRINT on or off simply defining (or not defining) Debug (^ above).
+//Allows toggling SERIAL PRINT on or off simply defining (or not defining) Debug (^ above).
 //Disabling Debug saves about 2-3% of memory on Arduino
 #ifdef DEBUG
 #define DEBUG_PRINT(x)     Serial.print(x)
@@ -41,7 +41,7 @@ hd44780_I2Cexp lcd;
 #define EVTEMP 1
 #define EVMOV 2
 
-//30000 byte = about 1000 lines. This define the max size of log files
+//30000 byte = about 1000 lines. This defines the max size of log files
 #define MAXLOGSIZE 30000
 
 #define DHTTYPE DHT11     // DHT 11
@@ -221,7 +221,7 @@ void sendSensor() {
   Blynk.virtualWrite(V5, hum);
   Blynk.virtualWrite(V6, temp);
 
-  //If system is disabled, return after updating hum and temp gauges
+  //If system is disabled, return after updating hum and temp gauges in blynk app
   if (systemDisabled == 1) {
     return;
   }
@@ -281,13 +281,11 @@ void setup() {
   server.begin();   // start the web server on port 80
   //Display Initialization
   lcd.begin(20, 4);
-  lcd.setCursor(8, 2);
   //SD Initialization and handle sd status messages on display/serial
   checkSD();
 
   WiFi.begin(ssid, pass); //Connects to WiFi
   Blynk.config(auth); //Pair Blynk to the app
-
 
   /*Reads from eeprom if there's need for recovery or not.
     255 is EEPROM's default value.
@@ -307,11 +305,11 @@ void setup() {
   DEBUG_PRINT(F("Need recovery: "));
   DEBUG_PRINTLN(needRecovery);
 
-  //First logging happens 30s after boot, regardless of logging interval settings. Display initialized after 2s
+  //First logging happens 30s after boot, regardless of logging interval settings.
   timer.setTimeout(30000, sendData);
   myRTC.updateTime();
-  handleDisplay();
-  currentDay = myRTC.dayofmonth;
+  handleDisplay(); //Display initialization
+  currentDay = myRTC.dayofmonth; //Saving RTC current day on setup, so that I can compare realtimeclock day with the saved value and send a report on new day
 
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
@@ -402,7 +400,7 @@ void logData() {
   dataString += " ";
   dataString += hum;
 
-  File dataFile = SD.open(getLogFile(1), FILE_WRITE); //Gets the correct file name. Need it because log file have incremental names
+  File dataFile = SD.open(getLogFile(1), FILE_WRITE); //getLogFile gets the correct file name. Need it because log file have incremental names
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.println(dataString);
@@ -441,7 +439,7 @@ String getLogFile(bool write) {
 //Delete all SD Log files
 void deleteSDLog() {
  if(!SD.begin(chipSelect)) {
-  return;
+  return; //No point in trying to delete files if the SD module is not working
  }
   lcdClearLine(3);
   File root = SD.open("/");
@@ -449,7 +447,7 @@ void deleteSDLog() {
   //No check is made on files to save memory on arduino
   while (true) {
     File entry =  root.openNextFile();
-    if (! entry) {
+    if (!entry) {
       // no more files, SD Empty
       lcd.print("All Files del.");
       needRecovery = 0; //It should already be 0 as it is decreased with each file removed/recovered, but initializing ensures that if needRecovery had a wrong value, it will be back to 0 after deleteSDlog
@@ -470,7 +468,7 @@ void deleteSDLog() {
 
 
 /*
-   This functions allows me to upload to Google Sheets data that had only been logged to the SD card due to a lack of connection
+   This functions allows uploading to Google Sheets data that had only been logged to the SD card due to a lack of connection
 */
 void recovery() {
   File myFile = SD.open(getLogFile(0));
@@ -609,7 +607,7 @@ void handleDisplay() {
   } else {
     lcd.setCursor(0, 2);
     lcd.print(F("WiFi ERR"));
-    lcdClearLine(1);
+    lcdClearLine(1); //If WiFi is not working, no point in printing an ip address (it would be 0.0.0.0)
   }
   lcd.setCursor(17, 3);
   lcd.print(F("("));
@@ -617,7 +615,7 @@ void handleDisplay() {
   lcd.print(F(")"));
 }
 
-//If WIFI is not working, we attempt to reconnect to wifi and to blynk servers
+//If WIFI is not working, we attempt to reconnect to wifi and to blynk servers. This function is called periodically
 void checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(WIFILED, LOW);
@@ -697,7 +695,7 @@ void manageStats(float temp, int hum) {
   }
 }
 
-//Resets all stats
+//Resets all stats. Temp and humidity max and minimum all initializated to current value
 void resetStats() {
   tempStat[0] = temp;
   tempStat[1] = temp;
