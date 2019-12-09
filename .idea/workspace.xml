@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7fc40ca1-4815-4eae-9771-36dd811d7d47" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AlertAndLogger/AlertAndLogger.ino" beforeDir="false" afterPath="$PROJECT_DIR$/AlertAndLogger/AlertAndLogger.ino" afterDir="false" />
     </list>
-    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -19,18 +19,25 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectId" id="1SZRjbM2jl6ghSAkvzYJO1bTWen" />
-  <component name="PropertiesComponent">
-    <property name="WebServerToolWindowFactoryState" value="false" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
   </component>
-  <component name="RunDashboard">
-    <option name="ruleStates">
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+  </component>
+  <component name="ServiceViewManager">
+    <option name="viewStates">
       <list>
-        <RuleState>
-          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
-        </RuleState>
-        <RuleState>
-          <option name="name" value="StatusDashboardGroupingRule" />
-        </RuleState>
+        <serviceView>
+          <treeState>
+            <expand />
+            <select />
+          </treeState>
+        </serviceView>
       </list>
     </option>
   </component>
@@ -50,6 +57,10 @@
       <workItem from="1572083836384" duration="2000" />
       <workItem from="1573411608494" duration="9000" />
       <workItem from="1575644299587" duration="13000" />
+      <workItem from="1575889382274" duration="18000" />
+      <workItem from="1575889479529" duration="21000" />
+      <workItem from="1575889544022" duration="13000" />
+      <workItem from="1575889565291" duration="4000" />
     </task>
     <servers />
   </component>
@@ -68,5 +79,15 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="408" y="174" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1575889549182">
+      <screen x="0" y="23" width="1440" height="830" />
+    </state>
+    <state x="408" y="174" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog/0.23.1440.830@0.23.1440.830" timestamp="1575889549182" />
+    <state x="368" y="272" key="com.intellij.ide.util.TipDialog" timestamp="1575889565266">
+      <screen x="0" y="23" width="1440" height="830" />
+    </state>
+    <state x="368" y="272" key="com.intellij.ide.util.TipDialog/0.23.1440.830@0.23.1440.830" timestamp="1575889565266" />
   </component>
 </project>

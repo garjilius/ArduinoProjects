@@ -21,7 +21,7 @@
 #define WIFILED 3
 #define SDLED 4
 
-#define DEBUG
+//#define DEBUG
 //Allows toggling SERIAL PRINT on or off simply defining (or not defining) Debug (^ above).
 //Disabling Debug saves about 2-3% of memory on Arduino
 #ifdef DEBUG
@@ -33,8 +33,6 @@
 #define DEBUG_PRINTDEC(x)
 #define DEBUG_PRINTLN(x)
 #endif
-
-hd44780_I2Cexp lcd;
 
 //Used to identify the events (Humidity/Temperatyre/Movement) in the notification array
 #define EVHUM 0
@@ -50,11 +48,13 @@ hd44780_I2Cexp lcd;
 WiFiSSLClient client; //Used for communication with Google Sheets
 WiFiServer server(80); //Used to Host the Control Panel
 
+hd44780_I2Cexp lcd;
 DHT dht(DHTPIN, DHTTYPE);
-//User to setup repeated actions
-BlynkTimer timer; //Blynk's version of SimpleTimer
+virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
-String readString; //This strings will contain characters read from Clients that connect to Arduino's WebServer or from Google on upload to spreadsheet
+BlynkTimer timer; //Blynk's version of SimpleTimer. Used to setup repeated actions
+
+String readString; //This strings will contain characters read from Clients that connect to Arduino's WebServer or from Google on upload to spreadsheet. Checking this response will allow us to understand if the request was successful
 byte hum; //Last humidity value from DHT
 float temp; //Last temperature value from DHT
 int humLimit = 75; //Preset treshold for humidity. Can override via blynk app
@@ -66,7 +66,6 @@ long int logInterval = 900000L; //Preset log interval. Can override via arduino 
 int needRecovery = 0; //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
 bool notificationAllowed[3] = {true, true, true}; //Allows/Denies notifications for humidity, temperature and movement
 bool systemDisabled = false; //Disables notifications for the whole system (via blynk app)
-virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
 //Saving info used for recap email: Max&Min temp/hum + number of movements detected
 //Position 0: Min - position 1: Max
@@ -93,7 +92,7 @@ void loop() {
   //:::::::::::::::::::::::::::::::::WEBSERVER:::::::::::::::::::::::::::::::
   WiFiClient client = server.available();   // listen for incoming clients
 
-  if (client) {
+  if (client) { //If a new client connects to the webservers
     //DEBUG_PRINTLN("new client");
     while (client.connected()) {
       if (client.available()) {
@@ -139,6 +138,9 @@ void loop() {
           delay(500);
           client.stop();
           //DEBUG_PRINTLN("client disconnected");
+
+          //:::::Each string in the URL will be used to start a different function:::::::
+
           //Gets date from Client via Javascript (view JS source code) and sets RTC to it
           if (readString.indexOf("?date") > 0) {
             //day-month-year-hour-min-sec
@@ -159,7 +161,6 @@ void loop() {
             lcdClearLine(3);
             lcd.print(F("Time Set"));
           }
-          //Each string in the URL will be used to start a different function
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
           }
@@ -276,7 +277,7 @@ void setup() {
   pinMode(WIFILED, OUTPUT);
   pinMode(DHTPIN, INPUT);
   pinMode(IRPIN, INPUT);
-  WiFi.setTimeout(5000); //Wifi connection timeout, avoids wifi being blocking
+  WiFi.setTimeout(5000); //Wifi connection timeout, prevents attempt to connect to wifi being blocking
   dht.begin(); //DHT Initialization...
   server.begin();   // start the web server on port 80
   //Display Initialization
@@ -366,9 +367,33 @@ void sendData() {
   }
 }
 
+//Delete all lines in Google Sheets Log
+void resetSheets() {
+  lcdClearLine(3);
+  if (!client.connect(host, httpsPort)) {
+    DEBUG_PRINTLN(F("Connection failed"));
+    lcd.print(F("CLOUD RESET FAIL"));
+    return;
+  }
+  String url = "/macros/s/" + GAS_ID + "/exec?reset";
+
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "Connection: close\r\n\r\n");
+
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
+    if (line == "\r") {
+      DEBUG_PRINTLN(F("Sheets Reset: SUCCESS"));
+      lcd.print(F("CLOUD RESET OK"));
+      break;
+    }
+  }
+}
+
 //::::::::::::::::::::::::FOLLOWING FUNCTIONS HANDLE SD:::::::::::::::::::::::::::::::
 
-//Checks if SD is working by trying to open its root directory
+//Checks if SD is working
 //Retries to initialize SD if failed.
 //If SD is not working, sd led comes up, then it is turned off again if SD starts working
 void checkSD() {
@@ -609,6 +634,7 @@ void handleDisplay() {
     lcd.print(F("WiFi ERR"));
     lcdClearLine(1); //If WiFi is not working, no point in printing an ip address (it would be 0.0.0.0)
   }
+  //lcd.setCursor((20-String(needRecovery).length()-2), 3); //Dynamic position to account for the fact that needrecovery might have a different number of digits. Disabled to save a few bytes
   lcd.setCursor(17, 3);
   lcd.print(F("("));
   lcd.print(needRecovery); //Number of files that need recovery
@@ -628,31 +654,6 @@ void checkWifi() {
     Blynk.connect(10000); //10K = Connection Timeout
   }
 }
-
-//Delete all lines in Google Sheets Log
-void resetSheets() {
-  lcdClearLine(3);
-  if (!client.connect(host, httpsPort)) {
-    DEBUG_PRINTLN(F("Connection failed"));
-    lcd.print(F("CLOUD RESET FAIL"));
-    return;
-  }
-  String url = "/macros/s/" + GAS_ID + "/exec?reset";
-
-  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" +
-               "Connection: close\r\n\r\n");
-
-  while (client.connected()) {
-    String line = client.readStringUntil('\n');
-    if (line == "\r") {
-      DEBUG_PRINTLN(F("Sheets Reset: SUCCESS"));
-      lcd.print(F("CLOUD RESET OK"));
-      break;
-    }
-  }
-}
-
 
 //Clears line 'i' and moves the cursor back to the start of that line
 void lcdClearLine(int i) {
