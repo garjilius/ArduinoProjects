@@ -349,7 +349,6 @@ void sendData() {
     logData();
     return;
   }
-  readData();
   String url = "/macros/s/" + GAS_ID + "/exec?temp=" + temp + "&hum=" + hum;
 
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
