@@ -42,8 +42,8 @@
 //30000 byte = about 1000 lines. This defines the max size of log files
 #define MAXLOGSIZE 30000
 
-#define DHTTYPE DHT11     // DHT 11
-//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Lab's Sensor
+//#define DHTTYPE DHT11     // DHT 11
+#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Lab's Sensor
 
 WiFiSSLClient client; //Used for communication with Google Sheets
 WiFiServer server(80); //Used to Host the Control Panel
