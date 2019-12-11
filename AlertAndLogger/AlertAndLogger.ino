@@ -42,8 +42,8 @@
 //30000 byte = about 1000 lines. This defines the max size of log files
 #define MAXLOGSIZE 30000
 
-//#define DHTTYPE DHT11     // DHT 11
-#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Lab's Sensor
+#define DHTTYPE DHT11     // DHT 11
+//#define DHTTYPE DHT22   // DHT 22, AM2302, AM2321 <--- Lab's Sensor
 
 WiFiSSLClient client; //Used for communication with Google Sheets
 WiFiServer server(80); //Used to Host the Control Panel
@@ -633,8 +633,7 @@ void handleDisplay() {
     lcd.print(F("WiFi ERR"));
     lcdClearLine(1); //If WiFi is not working, no point in printing an ip address (it would be 0.0.0.0)
   }
-  //lcd.setCursor((20-String(needRecovery).length()-2), 3); //Dynamic position to account for the fact that needrecovery might have a different number of digits. Disabled to save a few bytes
-  lcd.setCursor(17, 3);
+  lcd.setCursor((20-String(needRecovery).length()-2), 3); //Dynamic position to account for the fact that needrecovery might have a different number of digits.
   lcd.print(F("("));
   lcd.print(needRecovery); //Number of files that need recovery
   lcd.print(F(")"));
