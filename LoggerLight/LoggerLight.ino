@@ -7,16 +7,12 @@
 #include <DHT.h>
 #include <BlynkSimpleWiFiNINA.h>
 #include <virtuabotixRTC.h>
-#include <Wire.h>
-#include <hd44780.h>
-#include <hd44780ioClass/hd44780_I2Cexp.h>
 #include <SPI.h>
 #include <SD.h>
 #include <EEPROM.h>
 #include "arduino_secrets.h"
 
 #define DHTPIN 2 //Temp/Hum sensor pin
-#define IRPIN 9 //Motion sensor pin
 #define chipSelect  8 //microSD card pin
 #define WIFILED 3
 #define SDLED 4
@@ -37,7 +33,6 @@
 //Used to identify the events (Humidity/Temperatyre/Movement) in the notification array
 #define EVHUM 0
 #define EVTEMP 1
-#define EVMOV 2
 
 //30000 byte = about 1000 lines. This defines the max size of log files
 #define MAXLOGSIZE 30000
@@ -48,7 +43,6 @@
 WiFiSSLClient client; //Used for communication with Google Sheets
 WiFiServer server(80); //Used to Host the Control Panel
 
-hd44780_I2Cexp lcd;
 DHT dht(DHTPIN, DHTTYPE);
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
@@ -64,14 +58,14 @@ int recoveredLines = 0; //Number of lines recovered while in recovery process (s
 bool sdOK = false; //Will be set to true if SD is working.
 long int logInterval = 900000L; //Preset log interval. Can override via arduino web server
 int needRecovery = 0; //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
-bool notificationAllowed[3] = {true, true, true}; //Allows/Denies notifications for humidity, temperature and movement
+bool notificationAllowed[2] = {true, true}; //Allows/Denies notifications for humidity, temperature and movement
 bool systemDisabled = false; //Disables notifications for the whole system (via blynk app)
+bool modeTemp = true;
 
 //Saving info used for recap email: Max&Min temp/hum + number of movements detected
 //Position 0: Min - position 1: Max
 byte humStat[2] = {100, 0};
 float tempStat[2] = {100, -100};
-int numMov = 0;
 byte currentDay = 0;
 
 //Google Sheets connection data
@@ -158,8 +152,6 @@ void loop() {
             myRTC.updateTime(); //Need to update the RTC module before setting currentDay to its 'Day'
             currentDay = myRTC.dayofmonth;
             DEBUG_PRINTLN(F("Time Set"));
-            lcdClearLine(3);
-            lcd.print(F("Time Set"));
           }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
@@ -179,16 +171,16 @@ void loop() {
             sendReport();
           }
           if (readString.indexOf("?lcdoff") > 0) {
-            lcd.off();
+            // lcd.off();
           }
           if (readString.indexOf("?lcdon") > 0) {
-            lcd.on();
+            //  lcd.on();
           }
           if (readString.indexOf("?lcdbacklightoff") > 0) {
-            lcd.noBacklight();
+            // lcd.noBacklight();
           }
           if (readString.indexOf("?lcdbacklighton") > 0) {
-            lcd.backlight();
+            //  lcd.backlight();
           }
           if (readString.indexOf("?logInterval") > 0) {
             //Getting the useful data between startindex and endindex using indexOf
@@ -199,9 +191,6 @@ void loop() {
             timerGoogle = timer.setInterval(logInterval, sendData);
             DEBUG_PRINT(F("Log Interval set to: "));
             DEBUG_PRINTLN(logInterval);
-            lcdClearLine(3);
-            lcd.print(F("Log Interval: "));
-            lcd.print(minInterval);
           }
           readString = ""; //Reset readString
         }
@@ -259,15 +248,6 @@ void sendSensor() {
   else {
     notificationAllowed[EVTEMP] = true; //Re-enable notifications if temperature went below threshold
   }
-
-  if (digitalRead(IRPIN) == HIGH && notificationAllowed[EVMOV] == true) { //A movement was detected and notifications are allowed...
-    notificationAllowed[EVMOV] = false;
-    timer.setTimeout(60000L, enableMovementNotification); //Re-Enables movement notification after one minute
-    numMov++;
-    String notifica = "Movement Detected - ";
-    notifica += printTime();
-    Blynk.notify(notifica);
-  }
 }
 
 //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -276,12 +256,10 @@ void setup() {
   pinMode(SDLED, OUTPUT);
   pinMode(WIFILED, OUTPUT);
   pinMode(DHTPIN, INPUT);
-  pinMode(IRPIN, INPUT);
   WiFi.setTimeout(5000); //Wifi connection timeout, prevents attempt to connect to wifi being blocking
   dht.begin(); //DHT Initialization...
   server.begin();   // start the web server on port 80
   //Display Initialization
-  lcd.begin(20, 4);
   //SD Initialization and handle sd status messages on display/serial
   checkSD();
 
@@ -309,24 +287,17 @@ void setup() {
   //First logging happens 30s after boot, regardless of logging interval settings.
   timer.setTimeout(30000, sendData);
   myRTC.updateTime();
-  handleDisplay(); //Display initialization
   currentDay = myRTC.dayofmonth; //Saving RTC current day on setup, so that I can compare realtimeclock day with the saved value and send a report on new day
 
   //Sets run frequency for used functions
   timer.setInterval(3000, sendSensor);
   timerGoogle = timer.setInterval(logInterval, sendData);
-  timer.setInterval(10000, handleDisplay); //Display updated every 10 seconds
   timer.setInterval(35000, checkWifi); //WiFi status is checked every 35s
   timer.setInterval(1800000L, handleReports); //Need to send a report is checked every half an hour
   timer.setInterval(30000, checkSD); //Checks if SD is working every 30s
 }
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-//Re Enables movement notifications.
-//Need to have a specific function to do so as you need a void function to make "timer" work
-void enableMovementNotification() {
-  notificationAllowed[EVMOV] = true;
-}
 
 //Reads data from DHT sensor & Calls function to keep stats updated
 void readData() {
@@ -341,10 +312,8 @@ void readData() {
 
 //Logs data do Google Sheets
 void sendData() {
-  lcdClearLine(3);
   if ((WiFi.status() != WL_CONNECTED) || (!client.connect(host, httpsPort))) {
     DEBUG_PRINTLN(F("Connection failed"));
-    lcd.print(F("CLOUD LOG ERR"));
     //Log data to SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
     logData();
     return;
@@ -359,8 +328,6 @@ void sendData() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       DEBUG_PRINTLN(F("Logged to Google Sheets"));
-      lcd.print(F("CLOUD LOG "));
-      lcd.print(printTime());
       break;
     }
   }
@@ -368,10 +335,8 @@ void sendData() {
 
 //Delete all lines in Google Sheets Log
 void resetSheets() {
-  lcdClearLine(3);
   if (!client.connect(host, httpsPort)) {
     DEBUG_PRINTLN(F("Connection failed"));
-    lcd.print(F("CLOUD RESET FAIL"));
     return;
   }
   String url = "/macros/s/" + GAS_ID + "/exec?reset";
@@ -384,7 +349,6 @@ void resetSheets() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       DEBUG_PRINTLN(F("Sheets Reset: SUCCESS"));
-      lcd.print(F("CLOUD RESET OK"));
       break;
     }
   }
@@ -396,24 +360,19 @@ void resetSheets() {
 //Retries to initialize SD if failed.
 //If SD is not working, sd led comes up, then it is turned off again if SD starts working
 void checkSD() {
-  lcd.setCursor(8, 2);
   sdOK = SD.begin(chipSelect);
   if (!sdOK)  {
-    lcd.print(F(" - SD ERR"));
     digitalWrite(SDLED, HIGH);  // indicate via LED
     sdOK = SD.begin(chipSelect); //retries initialization
   }
   else {
     digitalWrite(SDLED, LOW);  // indicate via LED
-    lcd.print(F(" - SD OK "));
   }
 }
 
 //Logs data to SD
 void logData() {
   if (!SD.begin(chipSelect)) {
-    lcdClearLine(3);
-    lcd.print("SD BACKUP FAIL");
     return; //If SD is not working, no point in trying to log to SD
   }
   //This string will contain all logging data for current sensors reading: Date/Time, Temp, Hum
@@ -462,10 +421,9 @@ String getLogFile(bool write) {
 
 //Delete all SD Log files
 void deleteSDLog() {
- if(!SD.begin(chipSelect)) {
-  return; //No point in trying to delete files if the SD module is not working
- }
-  lcdClearLine(3);
+  if (!SD.begin(chipSelect)) {
+    return; //No point in trying to delete files if the SD module is not working
+  }
   File root = SD.open("/");
   //Delete every file. It obviously assumes all files on the SD card are recovery logs.
   //No check is made on files to save memory on arduino
@@ -473,7 +431,6 @@ void deleteSDLog() {
     File entry =  root.openNextFile();
     if (!entry) {
       // no more files, SD Empty
-      lcd.print("All Files del.");
       needRecovery = 0; //It should already be 0 as it is decreased with each file removed/recovered, but initializing ensures that if needRecovery had a wrong value, it will be back to 0 after deleteSDlog
       EEPROM.write(0, needRecovery);
       break;
@@ -505,8 +462,6 @@ void recovery() {
 
       if (!client.connect(host, httpsPort)) {
         DEBUG_PRINTLN(F("Recovery failed"));
-        lcdClearLine(3);
-        lcd.print(F("Recovery FAILED"));
         return;
       }
       String url = "/macros/s/" + GAS_ID + "/exec?temp=" + tempS + "&hum=" + humS + "&date=" + dateS;
@@ -524,9 +479,6 @@ void recovery() {
         if (line == "\r") {
           recoveredLines++;
           DEBUG_PRINTLN(F("Line recovered"));
-          lcdClearLine(3);
-          lcd.print(recoveredLines);
-          lcd.print(F(" log recovered"));
           break;
         }
       }
@@ -540,13 +492,8 @@ void recovery() {
       recovery();
     } else { //Recovery Done
       DEBUG_PRINTLN(F("Successful Recovery"));
-      lcdClearLine(3);
       recoveredLines = 0;
-      lcd.print(F("Recovery OK"));
     }
-  } else {
-    lcdClearLine(3);
-    lcd.print(F("Recovery FAILED"));
   }
   //Saving the updated number of files that need recovery to EEPROM
   EEPROM.write(0, needRecovery);
@@ -612,32 +559,6 @@ String printDate() {
 }
 //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-//Handles info on the LCD i2c display
-//This function assumes a 20x4 display
-void handleDisplay() {
-  lcd.setCursor(0, 0);
-  lcd.print(printTime());
-  lcd.print(" H:");
-  lcd.print(hum);
-  lcd.print("% T:");
-  lcd.print(temp);
-  lcd.print("C");
-  if (WiFi.status() == WL_CONNECTED) {
-    lcd.setCursor(0, 1);
-    lcd.print(F("IP: "));
-    lcd.print(WiFi.localIP());
-    lcd.setCursor(0, 2);
-    lcd.print(F("WiFi OK "));
-  } else {
-    lcd.setCursor(0, 2);
-    lcd.print(F("WiFi ERR"));
-    lcdClearLine(1); //If WiFi is not working, no point in printing an ip address (it would be 0.0.0.0)
-  }
-  lcd.setCursor((20-String(needRecovery).length()-2), 3); //Dynamic position to account for the fact that needrecovery might have a different number of digits.
-  lcd.print(F("("));
-  lcd.print(needRecovery); //Number of files that need recovery
-  lcd.print(F(")"));
-}
 
 //If WIFI is not working, we attempt to reconnect to wifi and to blynk servers. This function is called periodically
 void checkWifi() {
@@ -653,22 +574,11 @@ void checkWifi() {
   }
 }
 
-//Clears line 'i' and moves the cursor back to the start of that line
-void lcdClearLine(int i) {
-  lcd.setCursor(0, i);
-  lcd.print("                    "); //20 Whitespaces to clean the whole line on a 20x4 display
-  lcd.setCursor(0, i);
-}
-
 //Check if log lines need to be synced from the SD card to google sheets
 void recoveryManager() {
   if (needRecovery >= 1 && sdOK) {
     //Start recovery process if files need it
     recovery();
-  }
-  else {
-    lcdClearLine(3);
-    lcd.print("No Recovery!");
   }
 }
 
@@ -700,7 +610,6 @@ void resetStats() {
   tempStat[1] = temp;
   humStat[0] = hum;
   humStat[1] = hum;
-  numMov = 0;
 }
 
 //Sends the report mail using Blynk. Body+Subject+emailaddress must be <140 Char
@@ -713,12 +622,8 @@ void sendReport() {
   report += humStat[0];
   report += "% - ";
   report += humStat[1];
-  report += "% | #Movements: ";
-  report += numMov;
   //After sending the email, stats get reset
   Blynk.email(F("Daily report"), report);
-  lcdClearLine(3);
-  lcd.print("Report Sent");
   resetStats();
 }
 
