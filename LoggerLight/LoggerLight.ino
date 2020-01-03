@@ -586,7 +586,7 @@ void recoveryManager() {
 */
 
 //Keeps min and max temperature updated
-void manageStats(float temp, int hum) {
+void manageStats(float temp, float hum) {
   if (temp < tempStat[0]) {
     tempStat[0] = temp;
   }
