@@ -3,6 +3,7 @@
     Arduino Alert & Logger:
     DOCUMENTATION: https://drive.google.com/open?id=1mT9lr5-akYNQww7m9ZU5IvrvnQj9yaphkOifaIx3o74
     https://github.com/garjilius/ArduinoProjects/tree/master/AlertAndLogger
+    Lighter version with no movement detection or lcd display
  *****************************************************************************************/
 #include <DHT.h>
 #include <BlynkSimpleWiFiNINA.h>
@@ -49,7 +50,7 @@ virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 BlynkTimer timer; //Blynk's version of SimpleTimer. Used to setup repeated actions
 
 String readString; //This strings will contain characters read from Clients that connect to Arduino's WebServer or from Google on upload to spreadsheet. Checking this response will allow us to understand if the request was successful
-byte hum; //Last humidity value from DHT
+float hum; //Last humidity value from DHT
 float temp; //Last temperature value from DHT
 int humLimit = 75; //Preset treshold for humidity. Can override via blynk app
 int tempLimit = 25; //Preset treshold for temperature. Can override via blynk app
@@ -60,11 +61,11 @@ long int logInterval = 900000L; //Preset log interval. Can override via arduino 
 int needRecovery = 0; //Number of log files that need to be recovered. Gets read from EEPROM to keep it safe when unplugged
 bool notificationAllowed[2] = {true, true}; //Allows/Denies notifications for humidity, temperature and movement
 bool systemDisabled = false; //Disables notifications for the whole system (via blynk app)
-bool modeTemp = true;
+byte autoRecovery = 0;
 
 //Saving info used for recap email: Max&Min temp/hum + number of movements detected
 //Position 0: Min - position 1: Max
-byte humStat[2] = {100, 0};
+float humStat[2] = {100, 0};
 float tempStat[2] = {100, -100};
 byte currentDay = 0;
 
@@ -106,7 +107,7 @@ void loop() {
           client.println(F("<HEAD>"));
           client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>")); //ATTACHED IN PROJECT FOLDER (STYLES.CSS)
           //Most of the page gets added via remote javascript to save space on arduino and speed things up
-          client.println(F("<script src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jsextra.js?dl=0\"></script>")); //ATTACHED IN PROJECT FOLDER (JSEXTRA.JS)
+          client.println(F("<script src=\"https://dl.dropbox.com/s/r5kafcnwps1v9al/jsextraRidotto.js?dl=0\"></script>")); //ATTACHED IN PROJECT FOLDER (JSEXTRA.JS)
           client.println(F("<script src=\"https://kit.fontawesome.com/a076d05399.js\"></script>"));
           client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
           client.println(F("</HEAD>"));
@@ -154,7 +155,7 @@ void loop() {
             DEBUG_PRINTLN(F("Time Set"));
           }
           if (readString.indexOf("?recovery") > 0) {
-            recoveryManager();
+            recovery(); //Used to be recoveryManager before changes
           }
           if (readString.indexOf("?logNow") > 0) {
             sendData();
@@ -169,18 +170,6 @@ void loop() {
           if (readString.indexOf("?sendReport") > 0) {
             DEBUG_PRINTLN("Send report...");
             sendReport();
-          }
-          if (readString.indexOf("?lcdoff") > 0) {
-            // lcd.off();
-          }
-          if (readString.indexOf("?lcdon") > 0) {
-            //  lcd.on();
-          }
-          if (readString.indexOf("?lcdbacklightoff") > 0) {
-            // lcd.noBacklight();
-          }
-          if (readString.indexOf("?lcdbacklighton") > 0) {
-            //  lcd.backlight();
           }
           if (readString.indexOf("?logInterval") > 0) {
             //Getting the useful data between startindex and endindex using indexOf
@@ -295,6 +284,7 @@ void setup() {
   timer.setInterval(35000, checkWifi); //WiFi status is checked every 35s
   timer.setInterval(1800000L, handleReports); //Need to send a report is checked every half an hour
   timer.setInterval(30000, checkSD); //Checks if SD is working every 30s
+  timer.setInterval(300000L, recoveryManager); //If AutoRecovery is enabled, automatically recovers non-logged data
 }
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -452,6 +442,9 @@ void deleteSDLog() {
    This functions allows uploading to Google Sheets data that had only been logged to the SD card due to a lack of connection
 */
 void recovery() {
+    if (!(needRecovery >= 1 && sdOK)) {
+      return;
+    }
   File myFile = SD.open(getLogFile(0));
   if (myFile) {
     while (myFile.available()) {
@@ -510,6 +503,10 @@ BLYNK_CONNECTED() {
 //Import variables from virtual pin status
 BLYNK_WRITE(V0)  {
   systemDisabled = param.asInt();
+}
+
+BLYNK_WRITE(V1)  {
+  autoRecovery = param.asInt();
 }
 
 BLYNK_WRITE(V3)  {
@@ -576,7 +573,7 @@ void checkWifi() {
 
 //Check if log lines need to be synced from the SD card to google sheets
 void recoveryManager() {
-  if (needRecovery >= 1 && sdOK) {
+  if (needRecovery >= 1 && sdOK && autoRecovery == 1) {
     //Start recovery process if files need it
     recovery();
   }
