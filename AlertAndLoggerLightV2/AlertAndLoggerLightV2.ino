@@ -116,7 +116,7 @@ void loop() {
             client.println(F("<HEAD>"));
             client.println(F("<link rel='stylesheet' type='text/css' href='https://dl.dropbox.com/s/oe9jvh9pmyo8bek/styles.css?dl=0'/>")); //ATTACHED IN PROJECT FOLDER (STYLES.CSS)
             //Most of the page gets added via remote javascript to save space on arduino and speed things up
-            client.println(F("<script src=\"https://dl.dropbox.com/s/cmtov3p8tj29wbs/jsextra.js?dl=0\"></script>")); //ATTACHED IN PROJECT FOLDER (JSEXTRA.JS)
+            client.println(F("<script src=\"https://dl.dropbox.com/s/r5kafcnwps1v9al/jsextraRidotto.js?dl=0\"></script>")); //ATTACHED IN PROJECT FOLDER (JSEXTRA.JS)
             client.println(F("<script src=\"https://kit.fontawesome.com/a076d05399.js\"></script>"));
             client.println(F("<TITLE>Arduino Control Panel</TITLE>"));
             client.println(F("</HEAD>"));
