@@ -48,14 +48,14 @@
 WiFiSSLClient client; //Used for communication with Google Sheets
 WiFiServer server(80); //Used to Host the Control Panel
 
-hd44780_I2Cexp lcd;
+//hd44780_I2Cexp lcd;
 DHT dht(DHTPIN, DHTTYPE);
 virtuabotixRTC myRTC(7, 6, 5); //Clock Pin Configuration
 
 BlynkTimer timer; //Blynk's version of SimpleTimer. Used to setup repeated actions
 
 String readString; //This strings will contain characters read from Clients that connect to Arduino's WebServer or from Google on upload to spreadsheet. Checking this response will allow us to understand if the request was successful
-byte hum; //Last humidity value from DHT
+float hum; //Last humidity value from DHT
 float temp; //Last temperature value from DHT
 int humLimit = 75; //Preset treshold for humidity. Can override via blynk app
 int tempLimit = 25; //Preset treshold for temperature. Can override via blynk app
@@ -69,7 +69,7 @@ bool systemDisabled = false; //Disables notifications for the whole system (via 
 
 //Saving info used for recap email: Max&Min temp/hum + number of movements detected
 //Position 0: Min - position 1: Max
-byte humStat[2] = {100, 0};
+float humStat[2] = {100, 0};
 float tempStat[2] = {100, -100};
 int numMov = 0;
 byte currentDay = 0;
@@ -185,8 +185,8 @@ void loop() {
             myRTC.updateTime(); //Need to update the RTC module before setting currentDay to its 'Day'
             currentDay = myRTC.dayofmonth;
             DEBUG_PRINTLN(F("Time Set"));
-            lcdClearLine(3);
-            lcd.print(F("Time Set"));
+           // lcdClearLine(3);
+           // lcd.print(F("Time Set"));
           }
           if (readString.indexOf("?recovery") > 0) {
             recoveryManager();
@@ -205,7 +205,7 @@ void loop() {
             DEBUG_PRINTLN("Send report...");
             sendReport();
           }
-          if (readString.indexOf("?lcdoff") > 0) {
+          /*if (readString.indexOf("?lcdoff") > 0) {
             lcd.off();
           }
           if (readString.indexOf("?lcdon") > 0) {
@@ -216,7 +216,7 @@ void loop() {
           }
           if (readString.indexOf("?lcdbacklighton") > 0) {
             lcd.backlight();
-          }
+          } */
           if (readString.indexOf("?logInterval") > 0) {
             //Getting the useful data between startindex and endindex using indexOf
             int minInterval = readString.substring(readString.indexOf("=") + 1, readString.indexOf("HTTP") - 1).toInt();
@@ -226,9 +226,9 @@ void loop() {
             timerGoogle = timer.setInterval(logInterval, sendData);
             DEBUG_PRINT(F("Log Interval set to: "));
             DEBUG_PRINTLN(logInterval);
-            lcdClearLine(3);
-            lcd.print(F("Log Interval: "));
-            lcd.print(minInterval);
+           // lcdClearLine(3);
+            //lcd.print(F("Log Interval: "));
+           // lcd.print(minInterval);
           }
           readString = ""; //Reset readString
         }
@@ -308,7 +308,7 @@ void setup() {
   dht.begin(); //DHT Initialization...
   server.begin();   // start the web server on port 80
   //Display Initialization
-  lcd.begin(20, 4);
+  //lcd.begin(20, 4);
   //SD Initialization and handle sd status messages on display/serial
   checkSD();
 
@@ -368,10 +368,10 @@ void readData() {
 
 //Logs data do Google Sheets
 void sendData() {
-  lcdClearLine(3);
+  //lcdClearLine(3);
   if ((WiFi.status() != WL_CONNECTED) || (!client.connect(host, httpsPort))) {
     DEBUG_PRINTLN(F("Connection failed"));
-    lcd.print(F("CLOUD LOG ERR"));
+    //lcd.print(F("CLOUD LOG ERR"));
     //Log data to SD IF AND ONLY IF logging to google has failed, to save space on microsd and computing power
     logData();
     return;
@@ -386,8 +386,8 @@ void sendData() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       DEBUG_PRINTLN(F("Logged to Google Sheets"));
-      lcd.print(F("CLOUD LOG "));
-      lcd.print(printTime());
+      //lcd.print(F("CLOUD LOG "));
+      //lcd.print(printTime());
       break;
     }
   }
@@ -395,10 +395,10 @@ void sendData() {
 
 //Delete all lines in Google Sheets Log
 void resetSheets() {
-  lcdClearLine(3);
+  //lcdClearLine(3);
   if (!client.connect(host, httpsPort)) {
     DEBUG_PRINTLN(F("Connection failed"));
-    lcd.print(F("CLOUD RESET FAIL"));
+   // lcd.print(F("CLOUD RESET FAIL"));
     return;
   }
   String url = "/macros/s/" + GAS_ID + "/exec?reset";
@@ -411,7 +411,7 @@ void resetSheets() {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
       DEBUG_PRINTLN(F("Sheets Reset: SUCCESS"));
-      lcd.print(F("CLOUD RESET OK"));
+      //lcd.print(F("CLOUD RESET OK"));
       break;
     }
   }
@@ -423,24 +423,24 @@ void resetSheets() {
 //Retries to initialize SD if failed.
 //If SD is not working, sd led comes up, then it is turned off again if SD starts working
 void checkSD() {
-  lcd.setCursor(8, 2);
+  //lcd.setCursor(8, 2);
   sdOK = SD.begin(chipSelect);
   if (!sdOK)  {
-    lcd.print(F(" - SD ERR"));
+    //lcd.print(F(" - SD ERR"));
     digitalWrite(SDLED, HIGH);  // indicate via LED
     sdOK = SD.begin(chipSelect); //retries initialization
   }
   else {
     digitalWrite(SDLED, LOW);  // indicate via LED
-    lcd.print(F(" - SD OK "));
+    //lcd.print(F(" - SD OK "));
   }
 }
 
 //Logs data to SD
 void logData() {
   if (!SD.begin(chipSelect)) {
-    lcdClearLine(3);
-    lcd.print("SD BACKUP FAIL");
+    //lcdClearLine(3);
+    //lcd.print("SD BACKUP FAIL");
     return; //If SD is not working, no point in trying to log to SD
   }
   //This string will contain all logging data for current sensors reading: Date/Time, Temp, Hum
@@ -492,7 +492,7 @@ void deleteSDLog() {
   if (!SD.begin(chipSelect)) {
     return; //No point in trying to delete files if the SD module is not working
   }
-  lcdClearLine(3);
+  //lcdClearLine(3);
   File root = SD.open("/");
   //Delete every file. It obviously assumes all files on the SD card are recovery logs.
   //No check is made on files to save memory on arduino
@@ -500,7 +500,7 @@ void deleteSDLog() {
     File entry =  root.openNextFile();
     if (!entry) {
       // no more files, SD Empty
-      lcd.print("All Files del.");
+      //lcd.print("All Files del.");
       needRecovery = 0; //It should already be 0 as it is decreased with each file removed/recovered, but initializing ensures that if needRecovery had a wrong value, it will be back to 0 after deleteSDlog
       EEPROM.write(0, needRecovery);
       break;
@@ -532,8 +532,8 @@ void recovery() {
 
       if (!client.connect(host, httpsPort)) {
         DEBUG_PRINTLN(F("Recovery failed"));
-        lcdClearLine(3);
-        lcd.print(F("Recovery FAILED"));
+        //lcdClearLine(3);
+        //lcd.print(F("Recovery FAILED"));
         return;
       }
       String url = "/macros/s/" + GAS_ID + "/exec?temp=" + tempS + "&hum=" + humS + "&date=" + dateS;
@@ -551,9 +551,9 @@ void recovery() {
         if (line == "\r") {
           recoveredLines++;
           DEBUG_PRINTLN(F("Line recovered"));
-          lcdClearLine(3);
-          lcd.print(recoveredLines);
-          lcd.print(F(" log recovered"));
+         // lcdClearLine(3);
+         // lcd.print(recoveredLines);
+         // lcd.print(F(" log recovered"));
           break;
         }
       }
@@ -567,13 +567,13 @@ void recovery() {
       recovery();
     } else { //Recovery Done
       DEBUG_PRINTLN(F("Successful Recovery"));
-      lcdClearLine(3);
+      //lcdClearLine(3);
       recoveredLines = 0;
-      lcd.print(F("Recovery OK"));
+      //lcd.print(F("Recovery OK"));
     }
   } else {
-    lcdClearLine(3);
-    lcd.print(F("Recovery FAILED"));
+   // lcdClearLine(3);
+   // lcd.print(F("Recovery FAILED"));
   }
   //Saving the updated number of files that need recovery to EEPROM
   EEPROM.write(0, needRecovery);
@@ -680,12 +680,14 @@ void checkWifi() {
   }
 }
 
+/*
 //Clears line 'i' and moves the cursor back to the start of that line
 void lcdClearLine(int i) {
   lcd.setCursor(0, i);
   lcd.print("                    "); //20 Whitespaces to clean the whole line on a 20x4 display
   lcd.setCursor(0, i);
 }
+*/
 
 //Check if log lines need to be synced from the SD card to google sheets
 void recoveryManager() {
@@ -693,10 +695,10 @@ void recoveryManager() {
     //Start recovery process if files need it
     recovery();
   }
-  else {
+ /* else {
     lcdClearLine(3);
     lcd.print("No Recovery!");
-  }
+  } */
 }
 
 /*
@@ -706,7 +708,7 @@ void recoveryManager() {
 */
 
 //Keeps min and max temperature updated
-void manageStats(float temp, int hum) {
+void manageStats(float temp, float hum) {
   if (temp < tempStat[0]) {
     tempStat[0] = temp;
   }
@@ -744,8 +746,8 @@ void sendReport() {
   report += numMov;
   //After sending the email, stats get reset
   Blynk.email(F("Daily report"), report);
-  lcdClearLine(3);
-  lcd.print("Report Sent");
+  //lcdClearLine(3);
+  //lcd.print("Report Sent");
   resetStats();
 }
 
